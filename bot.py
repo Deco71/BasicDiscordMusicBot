@@ -15,13 +15,14 @@ import os
 # ---------------------------------------------- #
 
 
-TOKEN = 'Nzc2MTQxMzYwMjU5NzkyOTM3.X6wj-A.YNcmP2KmsPhYYlebxZ6at6eozQ4'  # BOT TOKEN, DO NOT SHARE
+TOKEN = 'Nzc2MjAzMDg4Nzc1NDc5MzE2.X6xddQ.1p6FP5EtJGeScZYaTOxTI1xEeXw'  # BOT TOKEN, DO NOT SHARE
 COMMAND_PREFIX = "!"
 
 today = str(date.today())
 oraUp = time.strftime("%H", time.localtime())
 minutiUp = time.strftime("%M", time.localtime())
 colore = 0x822434
+file_help = 'help.txt'
 global list_coda
 list_coda = []
 global ydl_opts
@@ -41,8 +42,6 @@ nowPlaying = [""]
 global volume
 global_volume = [0.5]
 
-random.seed() #Random initialization
-
 
 # ---------------------------------------------- #
 # ----------- BOT STARTUP SECTION -------------- #
@@ -58,6 +57,14 @@ bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents, help_command=
 # ---------------------------------------------- #
 # ------------ MUSIC BOT SECTION --------------- #
 # ---------------------------------------------- #
+
+@bot.command(aliases=["Help"])
+async def help(ctx: Context):
+    f = open(file_help, encoding='utf8')
+    helpStr = f.read()
+    titolo = "VeriNaisBot Help"
+
+    await ctx.channel.send(embed=discord.Embed(title = titolo, description=helpStr, color=colore))
 
 @bot.command()
 async def play(ctx):
@@ -337,6 +344,7 @@ async def on_message(message):
     if '*' in message.content:
         stringa = message.content.replace('*', 'Ə') + ' #GenderNeutrale'
         await message.channel.send(embed=discord.Embed(title="#GenderNeutrale", description=stringa, color=colore))
+    await bot.process_commands(message)
 
 
 bot.run(TOKEN)
