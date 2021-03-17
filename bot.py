@@ -21,7 +21,7 @@ COMMAND_PREFIX = "!"
 today = str(date.today())
 oraUp = time.strftime("%H", time.localtime())
 minutiUp = time.strftime("%M", time.localtime())
-colore = 0x822434
+colore = 0xd719c1
 file_help = 'help.txt'
 global list_coda
 list_coda = []
