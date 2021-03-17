@@ -338,14 +338,5 @@ async def on_message(message):
         stringa = message.content.replace('*', 'Ə') + ' #GenderNeutrale'
         await message.channel.send(embed=discord.Embed(title="#GenderNeutrale", description=stringa, color=colore))
 
-    if message.channel.id == 816773641572057119:
-        descrizione = ""
-        channel = bot.get_channel(776145787566161980)
-        titolo = message.content.split("\n")
-        for elemento in titolo[1:]:
-            descrizione += elemento + "\n"
-        await channel.send(embed=discord.Embed(title=titolo[0], description=descrizione, color=colore))
-    await bot.process_commands(message)
-
 
 bot.run(TOKEN)
