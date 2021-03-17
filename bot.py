@@ -254,7 +254,7 @@ async def skip(ctx):
                                            color=colore))
 
 
-@bot.command()
+@bot.command(aliases=["dc"])
 async def disconnect(ctx):
     svuota_coda()
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
