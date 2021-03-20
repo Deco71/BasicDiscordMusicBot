@@ -15,7 +15,7 @@ import os
 # ---------------------------------------------- #
 
 f = open("tokenBot.txt", encoding='utf8')
-# You must save your token in a txt file called "token.txt" and put this file in the directory with your bot
+# You must save your token in a txt file called "tokenBot.txt" and put this file in the directory with your bot.py
 TOKEN = f.read().strip()
 COMMAND_PREFIX = "!"
 colore = 0xd719c1
