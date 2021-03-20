@@ -367,19 +367,13 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    if message.content == 'shootdawnbotter':
-        myid = '<@131058082003288064>'
-        testo = ' %s Il bot è stato terminato ' % myid
-        await message.channel.send(embed=discord.Embed(title="Bot Terminato", description=testo, color=colore))
-        await bot.close()
-
     if message.content == "f" or message.content == "F":
         await message.channel.send(embed=discord.Embed(description='**FFFFFFFFFFFFFFFF**\n**F**\n**F**\n**F**\n**FFFFFFFFF**\n**F**\n**F**\n**F**\n**F**\n**F**',
                                                        color=colore))
 
     if '*' in message.content:
-        stringa = message.content.replace('*', 'Ə') + ' #GenderNeutrale'
-        await message.channel.send(embed=discord.Embed(title="#GenderNeutrale", description=stringa, color=colore))
+        stringa = message.content.replace('*', 'Ə') + ' #GenderNeutral'
+        await message.channel.send(embed=discord.Embed(title="#GenderNeutral", description=stringa, color=colore))
     await bot.process_commands(message)
 
 
