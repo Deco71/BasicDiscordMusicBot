@@ -264,7 +264,7 @@ async def skip(ctx):
                                                color=colore))
 
 
-@bot.command()
+@bot.command(aliases=["dc"])
 async def disconnect(ctx):
     if await permessi(ctx):
         svuota_coda()
