@@ -4,9 +4,10 @@ Like the title says, it's a vary basic Music Bot for Discord written in Python u
 discord.py,
 youtube_search,
 youtube_dl,
-And FFMpeg.
+discord_slash
+and FFMpeg.
 
-It supports even a queue, even if I'm aware that there are better ways for implementing such a feature that unfortunately I can't code yet.
+It supports slash commands and a queue.
 
 It'll be used for an Italian discord server, so all the embedded messagges will be in Italian,
 but the code comments will be in english in the hope that someone find this code usefull as a basic

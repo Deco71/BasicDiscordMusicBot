@@ -1,14 +1,8 @@
+from discord_slash.utils.manage_commands import create_option
 from youtube_search import YoutubeSearch
-from discord.ext.commands import Context
-from discord.ext import commands
-from discord.utils import get
-from datetime import date
-import discord.utils
+from discord_slash import SlashCommand
 import youtube_dl
-import random
-import time
-import os
-
+import discord
 
 # ---------------------------------------------- #
 # ----------- BOT VARIABLES SECTION ------------ #
@@ -45,28 +39,37 @@ global_volume = [0.5]
 bot = discord.Client()
 intents = discord.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents, help_command=None)
+slash = SlashCommand(bot, sync_commands=True)
 
 
 # ---------------------------------------------- #
 # ------------ MUSIC BOT SECTION --------------- #
 # ---------------------------------------------- #
 
-@bot.command(aliases=["Help"])
-async def help(ctx: Context):
-    f = open(file_help, encoding='utf8')
-    helpStr = f.read()
-    titolo = "VeriNaisBot Help"
+'''
+Please note that when first running your bot the slash commands could appear on your server even one after the startup.
+This is caused by the Discord API and there's nothing I can do. 
+For making things faster if you're using it for only specifics servers, you can use the guilds_ids parameter
+when creating the slash command.
+More information about this can be found here: https://discord-py-slash-command.readthedocs.io/en/latest/quickstart.html
+Happy coding!
+'''
 
-    await ctx.channel.send(embed=discord.Embed(title = titolo, description=helpStr, color=colore))
 
-@bot.command()
-async def play(ctx):
+@slash.slash(name="play", description="Riproduce un video da youtube",
+             options=[
+               create_option(
+                 name="url",
+                 description="Inserisci o un link o un titolo di un video di youtube",
+                 # Insert an url or a title of a youtube video
+                 option_type=3,
+                 required=True
+               )
+             ])
+async def play(ctx, url : str):
     # We first search for the user that wrote the message
-    user = ctx.message.author
-    url = str(ctx.message.content)
+    user = ctx.author
     # Than we get our query/url (you can use both!)
-    url = url[5:]
     if user.voice == None:
         # If the user doesn't stay in any voice channel, we send him a message
         await ctx.send(embed=discord.Embed(title="Utente non trovato",
@@ -160,7 +163,7 @@ def svuota_coda():
     list_coda.clear()
 
 
-@bot.command(aliases=["clr"])
+@slash.slash(name="clear", description="Elimina tutti i brani in coda")
 async def clear(ctx):
     # Command that clears the queue
     if await permessi(ctx):
@@ -170,7 +173,7 @@ async def clear(ctx):
                                            color=colore))
 
 
-@bot.command(aliases=["queue"])
+@slash.slash(name="queue", description="Mostra i brani in coda")
 async def coda(ctx):
     # Command that prints the queue
     if await permessi(ctx):
@@ -185,7 +188,7 @@ async def coda(ctx):
                                                color=colore))
 
 
-@bot.command(aliases=["NowPlaying"])
+@slash.slash(name="np", description="Mostra il brano attualmente in riproduzione")
 async def np(ctx):
     # Command that shows what the bot is playing right now
     if await permessi(ctx):
@@ -203,13 +206,22 @@ async def np(ctx):
 # ---FINE GESTIONE DELLA CODA--- #
 
 
-@bot.command()
-async def volume(ctx, *args):
+@slash.slash(name="volume", description="Mostra a che livello è il volume e permette di modificarlo",
+             options=[
+               create_option(
+                 name="Volume",
+                 description="Inserisci un valore da 0 a 100",
+                 # Insert a value from 0 to 100
+                 option_type=3,
+                 required=False
+               )
+             ])
+async def volume(ctx, *Volume: int):
     # Volume manager
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         try:
-            volume = args[0]
+            volume = Volume[0]
         except:
             # If we get a !volume command without args, we simply print the actual volume
             await ctx.send(embed=discord.Embed(title="Volume",
@@ -243,7 +255,7 @@ async def volume(ctx, *args):
                                                color=colore))
 
 
-@bot.command(aliases=["next"])
+@slash.slash(name="skip", description="Salta al brano seguente")
 async def skip(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -264,7 +276,7 @@ async def skip(ctx):
                                                color=colore))
 
 
-@bot.command(aliases=["dc"])
+@slash.slash(name="disconnect", description="Disconnette il bot dal canale vocale")
 async def disconnect(ctx):
     if await permessi(ctx):
         svuota_coda()
@@ -280,7 +292,7 @@ async def disconnect(ctx):
                                                color=colore))
 
 
-@bot.command()
+@slash.slash(name="pause", description="Mette in pausa la riproduzione")
 async def pause(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -295,7 +307,7 @@ async def pause(ctx):
                                                color=colore))
 
 
-@bot.command()
+@slash.slash(name="resume", description="Riprende la riproduzione")
 async def resume(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -314,7 +326,7 @@ async def resume(ctx):
                                                color=colore))
 
 
-@bot.command()
+@slash.slash(name="stop", description="Interrompe la riproduzione e elimina la coda")
 async def stop(ctx):
     if await permessi(ctx):
         svuota_coda()
@@ -333,7 +345,7 @@ async def stop(ctx):
 async def permessi(ctx):
     # You surely have seen this function very often, infact this is where we control that the user that
     # wrote the message is in a voice channel and if the bot has been called with the !play function
-    user = ctx.message.author
+    user = ctx.author
     if user.voice is None:
         await ctx.send(embed=discord.Embed(title="Errore",
                                            description="Per usare il bot musicale, connettiti ad un canale vocale",
@@ -374,7 +386,6 @@ async def on_message(message):
     if '*' in message.content:
         stringa = message.content.replace('*', 'Ə') + ' #GenderNeutral'
         await message.channel.send(embed=discord.Embed(title="#GenderNeutral", description=stringa, color=colore))
-    await bot.process_commands(message)
 
 
 bot.run(TOKEN)
