@@ -105,7 +105,6 @@ async def play(ctx, url : str):
             # Now we extract the video info using youtube_dl
             url = ytlink + results[0]['url_suffix']
             info = ydl.extract_info(url, download=False)
-            print(info)
         except:
             await ctx.send(embed=discord.Embed(title="Errore",
                                                description="Inserire un link valido\n"
