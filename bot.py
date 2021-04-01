@@ -2,6 +2,7 @@ from discord_slash.utils.manage_commands import create_option
 from youtube_search import YoutubeSearch
 from discord_slash import SlashCommand
 from discord.ext import commands
+import youtube_dl.utils
 import youtube_dl
 import discord
 
@@ -15,7 +16,7 @@ TOKEN = f.read().strip()
 COMMAND_PREFIX = "!"
 colore = 0xd719c1
 file_help = 'help.txt'
-ytlink = "https://www.youtube.com"
+ytlink = "https://www.youtube.com/watch?v="
 list_queue = []
 ydl_opts = {
     'format': 'bestaudio/best',
@@ -31,6 +32,7 @@ list_titles = []
 url_list = []
 nowPlaying = [""]
 global_volume = [0.5]
+youtube_dl.utils.std_headers['Cookie'] = ''
 
 
 # ---------------------------------------------- #
@@ -58,17 +60,17 @@ Happy coding!
 '''
 
 
-@slash.slash(name="play", description="Riproduce un video da youtube",
-             options=[
-               create_option(
-                 name="url",
-                 description="Inserisci o un link o un titolo di un video di youtube",
-                 # Insert an url or a title of a youtube video
-                 option_type=3,
-                 required=True
-               )
+@slash.slash(name="play", description="Riproduce un brano da youtube",
+             options=
+             [
+                 create_option(
+                        name="Titolo",
+                        description="Inserisci un link o un titolo di un video di youtube",
+                        option_type=3,
+                        required=True
+                     ),
              ])
-async def play(ctx, url : str):
+async def play(ctx, url: str):
     # We first search for the user that wrote the message
     user = ctx.author
     # Than we get our query/url (you can use both!)
@@ -87,40 +89,37 @@ async def play(ctx, url : str):
         pass
     # We take the "bot voice" instance
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    try:
-        # And then start to search for our song on youtube
-        results = YoutubeSearch(url, max_results=1).to_dict()
-    except:
-        await ctx.send(embed=discord.Embed(title="Nessun risultato trovato",
-                                           description="Non siamo riusciti a trovare ciò che cercavi\n"
-                                           "Prova ad essere più preciso",
-                                           color=colore))
-        return
+
+    # Then we search the video on yt
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        await ctx.send(embed=discord.Embed(title="Attendere...",
-                                           description="Sto elaborando il brano **" + results[0]['title'] + "**\n "
-                                                       "Dammi un secondo...",
-                                           color=colore))
         try:
-            # Now we extract the video info using youtube_dl
-            url = ytlink + results[0]['url_suffix']
             info = ydl.extract_info(url, download=False)
         except:
-            await ctx.send(embed=discord.Embed(title="Errore",
-                                               description="Inserire un link valido\n"
-                                                           "Se il link inserito è valido riprovare più tardi...",
-                                               color=colore))
-            return
+            try:
+                info = ydl.extract_info(f"ytsearch:{url}", download=False)['entries'][0]
+            except:
+                await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
+                                           description="Non siamo riusciti a reperire il brano richiesto \n"
+                                                       "Cortesemente, riprova più tardi",
+                                           color=colore))
+                return
+
+    # If we are listening to a song, we add the new song to the queue
     if voice.is_playing() or voice.is_paused():
-        # If we are listening to a song, we add the new song to the queue
         list_queue.append(info)
-        url_list.append(ytlink + results[0]['url_suffix'])
-        list_titles.append(results[0]['title'])
+        url_list.append(ytlink + info['id'])
+        list_titles.append(info['title'])
         await ctx.send(embed=discord.Embed(title="Brano messo in coda",
-                                           description="Il brano **" + results[0][
-                                               'title'] + "** è stato messo in coda",
+                                           description="Il brano **" + info['title'] +
+                                                       "** è stato messo in coda",
                                            color=colore))
         return
+
+    await ctx.send(embed=discord.Embed(title="Elaborazione brano",
+                                       description="Stiamo elaborando il brano **" + info['title'] + "**\n"
+                                                   "Attendere qualche istante...",
+                                       color=colore))
+
     # If all goes as planned while searching the song on youtube, we finally start to play the song
     try:
         voice.play(discord.FFmpegPCMAudio(info['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: queue(ctx))
@@ -130,10 +129,10 @@ async def play(ctx, url : str):
                                            description="Ci si è inceppato il disco...",
                                            color=colore))
         return
-    nowPlaying[0] = ytlink + results[0]['url_suffix']
+    nowPlaying[0] = ytlink + info['id']
 
 
-# ---GESTIONE DELLA CODA--- #
+# ---QUEUE FUNCTIONS--- #
 
 
 def queue(ctx):
@@ -141,7 +140,8 @@ def queue(ctx):
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     if len(list_queue) != 0:
         try:
-            voice.play(discord.FFmpegPCMAudio(list_queue[0]['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: queue(ctx))
+            voice.play(discord.FFmpegPCMAudio(list_queue[0]['formats'][0]['url'], **FFMPEG_OPTS),
+                       after=lambda e: queue(ctx))
             voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[0])
             nowPlaying[0] = url_list[0]
         except:
@@ -158,9 +158,13 @@ def svuota_coda():
     url_list.clear()
 
 
-@slash.slash(name="clear", description="Elimina tutti i brani in coda")
+def svuota_coda():
+    list_titles.clear()
+    list_queue.clear()
+
+
+@slash.slash(name="clear", description="Rimuove tutti i brani nella coda")
 async def clear(ctx):
-    # Command that clears the queue
     if await permessi(ctx):
         svuota_coda()
         await ctx.send(embed=discord.Embed(title="Coda Svuotata",
@@ -168,9 +172,8 @@ async def clear(ctx):
                                            color=colore))
 
 
-@slash.slash(name="queue", description="Mostra i brani in coda")
+@slash.slash(name="queue", description="Mostra la coda")
 async def coda(ctx):
-    # Command that prints the queue
     if await permessi(ctx):
         if len(list_queue) == 0:
             await ctx.send(embed=discord.Embed(title="Coda vuota",
@@ -183,9 +186,8 @@ async def coda(ctx):
                                                color=colore))
 
 
-@slash.slash(name="np", description="Mostra il brano attualmente in riproduzione")
+@slash.slash(name="nowPlaying", description="Mostra il brano attualmente in riproduzione")
 async def np(ctx):
-    # Command that shows what the bot is playing right now
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if not voice.is_playing() and not voice.is_paused():
@@ -196,7 +198,7 @@ async def np(ctx):
             await ctx.send(nowPlaying[0])
 
 
-# ---FINE GESTIONE DELLA CODA--- #
+# ---END OF QUEUE FUNCTIONS--- #
 
 
 @slash.slash(name="volume", description="Mostra a che livello è il volume e permette di modificarlo",
@@ -248,7 +250,7 @@ async def volume(ctx, *Volume: int):
                                                color=colore))
 
 
-@slash.slash(name="skip", description="Salta al brano seguente")
+@slash.slash(name="skip", description="Salta al brano successivo")
 async def skip(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -259,8 +261,9 @@ async def skip(ctx):
                                                    color=colore))
             else:
                 await ctx.send(embed=discord.Embed(title="Brano Skippato",
-                                                   description="Sto elaborando il nuovo brano **" + list_titles[0] +
-                                                               "**\nDammi un secondo...",
+                                                   description="Sto elaborando il nuovo brano **" + list_titles[
+                                                       0] + "**\n"
+                                                            "Dammi un secondo...",
                                                    color=colore))
             voice.stop()
         else:
@@ -269,7 +272,7 @@ async def skip(ctx):
                                                color=colore))
 
 
-@slash.slash(name="disconnect", description="Disconnette il bot dal canale vocale")
+@slash.slash(name="disconnect", description="Disconnette il bot musicale dalla chat vocale")
 async def disconnect(ctx):
     if await permessi(ctx):
         svuota_coda()
@@ -285,7 +288,7 @@ async def disconnect(ctx):
                                                color=colore))
 
 
-@slash.slash(name="pause", description="Mette in pausa la riproduzione")
+@slash.slash(name="pause", description="Mette in pausa il brano in riproduzione")
 async def pause(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -300,7 +303,7 @@ async def pause(ctx):
                                                color=colore))
 
 
-@slash.slash(name="resume", description="Riprende la riproduzione")
+@slash.slash(name="resume", description="Riprende la riproduzione del brano")
 async def resume(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
