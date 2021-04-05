@@ -1,9 +1,0 @@
-**!play "nome pezzo"**: Per riprodurre un brano
-**!np**: Per sapere quale brano è in riproduzione
-**!pause**: Per mettere in pausa
-**!resume**: Per riprendere la riproduzione
-**!volume**: Per modificare il volume
-**!disconnect**: Disconnette il bot dal canale vocale
-**!queue**: Per visualizzare i brani in coda
-**!skip**: Per passare al brano successivo
-**!stop**: Per stoppare la riproduzione

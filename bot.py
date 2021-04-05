@@ -15,7 +15,6 @@ f = open("tokenBot.txt", encoding='utf8')
 TOKEN = f.read().strip()
 COMMAND_PREFIX = "!"
 colore = 0xd719c1
-file_help = 'help.txt'
 ytlink = "https://www.youtube.com/watch?v="
 list_queue = []
 ydl_opts = {
@@ -27,7 +26,7 @@ ydl_opts = {
         'preferredquality': '192',
     }],
 }
-FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10'}
 list_titles = []
 url_list = []
 nowPlaying = [""]
@@ -100,7 +99,8 @@ async def play(ctx, url: str):
             except:
                 await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
                                            description="Non siamo riusciti a reperire il brano richiesto \n"
-                                                       "Cortesemente, riprova più tardi",
+                                                       "Prova a formulare la tua richiesta nella forma: \n"
+                                                       "'Artista - Titolo Brano'\n",
                                            color=colore))
                 return
 
@@ -158,11 +158,6 @@ def svuota_coda():
     url_list.clear()
 
 
-def svuota_coda():
-    list_titles.clear()
-    list_queue.clear()
-
-
 @slash.slash(name="clear", description="Rimuove tutti i brani nella coda")
 async def clear(ctx):
     if await permessi(ctx):
@@ -174,13 +169,17 @@ async def clear(ctx):
 
 @slash.slash(name="queue", description="Mostra la coda")
 async def coda(ctx):
+    contatore = 0
+    stringa = ""
     if await permessi(ctx):
         if len(list_queue) == 0:
             await ctx.send(embed=discord.Embed(title="Coda vuota",
                                                description="Nella coda non è presente nessun brano",
                                                color=colore))
         else:
-            stringa = "\n".join(list_titles)
+            for elemento in list_titles:
+                contatore += 1
+                stringa += str(contatore) + "- " + elemento + "\n"
             await ctx.send(embed=discord.Embed(title="Coda",
                                                description=stringa,
                                                color=colore))
@@ -198,6 +197,34 @@ async def np(ctx):
             await ctx.send(nowPlaying[0])
 
 
+@slash.slash(name="remove", description="Rimuove un brano dalla coda",
+             options=
+             [
+                 create_option(
+                        name="Indice",
+                        description="Indice del brano da rimuovere (puoi reperire gli indici con il comando queue)",
+                        option_type=4,
+                        required=True
+                     ),
+             ])
+async def remove(ctx, indi: int):
+    if await(permessi(ctx)):
+        indice = indi-1
+        if indice < len(list_queue):
+            await ctx.send(embed=discord.Embed(title="Brano Skippato",
+                                               description="Il brano **" + list_titles[indice] + "** "
+                                                           "è stato eliminato dalla coda",
+                                               color=colore))
+            del list_queue[indice]
+            del list_titles[indice]
+            del url_list[indice]
+        else:
+            await ctx.send(embed=discord.Embed(title="Indice inesistente",
+                                               description="Non esiste nessun brano con tale indice nella coda",
+                                               color=colore))
+    
+
+
 # ---END OF QUEUE FUNCTIONS--- #
 
 
@@ -207,7 +234,7 @@ async def np(ctx):
                  name="Volume",
                  description="Inserisci un valore da 0 a 100",
                  # Insert a value from 0 to 100
-                 option_type=3,
+                 option_type=4,
                  required=False
                )
              ])
