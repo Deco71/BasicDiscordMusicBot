@@ -139,14 +139,14 @@ def queue(ctx):
     # This is where our queue gets underway
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     if len(list_queue) != 0:
-        try:
-            voice.play(discord.FFmpegPCMAudio(list_queue[0]['formats'][0]['url'], **FFMPEG_OPTS),
-                       after=lambda e: queue(ctx))
-            voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[0])
-            nowPlaying[0] = url_list[0]
-        except:
-            print("Errore nella riproduzione della coda")
-            return
+        voice.play(discord.FFmpegPCMAudio(list_queue[0]['formats'][0]['url'], **FFMPEG_OPTS),
+                   after=lambda e: queue(ctx))
+        voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[0])
+        nowPlaying[0] = url_list[0]
+        channel = bot.get_channel(ctx.channel_id)
+        bot.loop.create_task(channel.send(embed=discord.Embed(title="Ora in Riproduzione",
+                                          description="Stiamo elaborando il brano **" + list_titles[0] + "**\n"
+                                          "Attendere qualche istante...", color=colore)))
         del list_queue[0]
         del list_titles[0]
         del url_list[0]
@@ -222,7 +222,6 @@ async def remove(ctx, indi: int):
             await ctx.send(embed=discord.Embed(title="Indice inesistente",
                                                description="Non esiste nessun brano con tale indice nella coda",
                                                color=colore))
-    
 
 
 # ---END OF QUEUE FUNCTIONS--- #
@@ -288,9 +287,7 @@ async def skip(ctx):
                                                    color=colore))
             else:
                 await ctx.send(embed=discord.Embed(title="Brano Skippato",
-                                                   description="Sto elaborando il nuovo brano **" + list_titles[
-                                                       0] + "**\n"
-                                                            "Dammi un secondo...",
+                                                   description="Il brano è stato skippato",
                                                    color=colore))
             voice.stop()
         else:
