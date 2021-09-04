@@ -381,9 +381,5 @@ async def on_message(message):
             description='**FFFFFFFFFFFFFFFF**\n**F**\n**F**\n**F**\n**FFFFFFFFF**\n**F**\n**F**\n**F**\n**F**\n**F**',
             color=colore))
 
-    if '*' in message.content:
-        stringa = message.content.replace('*', 'Ə') + ' #GenderNeutral'
-        await message.channel.send(embed=discord.Embed(title="#GenderNeutral", description=stringa, color=colore))
-
 
 bot.run(TOKEN)
