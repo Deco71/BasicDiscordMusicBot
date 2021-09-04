@@ -1,5 +1,4 @@
 from discord_slash.utils.manage_commands import create_option
-from youtube_search import YoutubeSearch
 from discord_slash import SlashCommand
 from discord.ext import commands
 import youtube_dl.utils
@@ -13,13 +12,15 @@ import discord
 f = open("tokenBot.txt", encoding='utf8')
 # You must save your token in a txt file called "tokenBot.txt" and put this file in the directory with your bot.py
 TOKEN = f.read().strip()
-COMMAND_PREFIX = "!"
+COMMAND_PREFIX = "/"
 colore = 0xd719c1
 ytlink = "https://www.youtube.com/watch?v="
 list_queue = []
 ydl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': 'True',
+    'geo_bypass': 'True',
+    'max_filesize': 10485760,
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'mp3',
@@ -30,7 +31,7 @@ FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_
 list_titles = []
 url_list = []
 nowPlaying = [""]
-global_volume = [0.5]
+global_volume = [0.25]
 youtube_dl.utils.std_headers['Cookie'] = ''
 
 
@@ -60,16 +61,8 @@ Happy coding!
 
 
 @slash.slash(name="play", description="Riproduce un brano da youtube",
-             options=
-             [
-                 create_option(
-                        name="Titolo",
-                        description="Inserisci un link o un titolo di un video di youtube",
-                        option_type=3,
-                        required=True
-                     ),
-             ])
-async def play(ctx, url: str):
+             options=[create_option("titolo", "Inserisci un link o un titolo di un video di youtube", 3, True)],)
+async def play(ctx, titolo: str):
     # We first search for the user that wrote the message
     user = ctx.author
     # Than we get our query/url (you can use both!)
@@ -92,10 +85,10 @@ async def play(ctx, url: str):
     # Then we search the video on yt
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         try:
-            info = ydl.extract_info(url, download=False)
+            info = ydl.extract_info(titolo, download=False)
         except:
             try:
-                info = ydl.extract_info(f"ytsearch:{url}", download=False)['entries'][0]
+                info = ydl.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
             except:
                 await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
                                            description="Non siamo riusciti a reperire il brano richiesto \n"
@@ -198,18 +191,10 @@ async def np(ctx):
 
 
 @slash.slash(name="remove", description="Rimuove un brano dalla coda",
-             options=
-             [
-                 create_option(
-                        name="Indice",
-                        description="Indice del brano da rimuovere (puoi reperire gli indici con il comando queue)",
-                        option_type=4,
-                        required=True
-                     ),
-             ])
-async def remove(ctx, indi: int):
+             options=[create_option("indice", "Indice del brano da rimuovere (puoi reperire gli indici con il comando queue)", 4, True)],)
+async def remove(ctx, indice: int):
     if await(permessi(ctx)):
-        indice = indi-1
+        indice = indice - 1
         if indice < len(list_queue):
             await ctx.send(embed=discord.Embed(title="Brano Skippato",
                                                description="Il brano **" + list_titles[indice] + "** "
@@ -228,21 +213,13 @@ async def remove(ctx, indi: int):
 
 
 @slash.slash(name="volume", description="Mostra a che livello è il volume e permette di modificarlo",
-             options=[
-               create_option(
-                 name="Volume",
-                 description="Inserisci un valore da 0 a 100",
-                 # Insert a value from 0 to 100
-                 option_type=4,
-                 required=False
-               )
-             ])
-async def volume(ctx, *Volume: int):
+             options=[create_option("volume", "Inserisci un valore da 0 a 100", 4, False)])
+async def volume(ctx, *volume: int):
     # Volume manager
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         try:
-            volume = Volume[0]
+            volume = volume[0]
         except:
             # If we get a !volume command without args, we simply print the actual volume
             await ctx.send(embed=discord.Embed(title="Volume",

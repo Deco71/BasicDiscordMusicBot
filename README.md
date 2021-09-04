@@ -1,6 +1,6 @@
 # BasicDiscordMusicBot
 
-Like the title says, it's a vary basic Music Bot for Discord written in Python using:
+Like the title says, it's a very basic Music Bot for Discord written in Python using:
 discord.py,
 youtube_dl,
 discord_slash
