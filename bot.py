@@ -138,7 +138,7 @@ def queue(ctx):
     guild = ctx.guild
     voice = discord.utils.get(bot.voice_clients, guild=guild)
     if len(list_queue[guild]) != 0:
-        voice.play(discord.FFmpegPCMAudio(list_queue[0]['formats'][0]['url'], **FFMPEG_OPTS),
+        voice.play(discord.FFmpegPCMAudio(list_queue[guild][0]['formats'][0]['url'], **FFMPEG_OPTS),
                    after=lambda e: queue(ctx))
         voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
         nowPlaying[guild][0] = url_list[guild][0]
