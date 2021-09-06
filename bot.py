@@ -15,7 +15,7 @@ TOKEN = f.read().strip()
 COMMAND_PREFIX = "/"
 colore = 0xd719c1
 ytlink = "https://www.youtube.com/watch?v="
-list_queue = []
+list_queue = dict()
 ydl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': 'True',
@@ -28,10 +28,10 @@ ydl_opts = {
     }],
 }
 FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10'}
-list_titles = []
-url_list = []
-nowPlaying = [""]
-global_volume = [0.25]
+list_titles = dict()
+url_list = dict()
+nowPlaying = dict()
+global_volume = dict()
 youtube_dl.utils.std_headers['Cookie'] = ''
 
 
@@ -65,6 +65,8 @@ Happy coding!
 async def play(ctx, titolo: str):
     # We first search for the user that wrote the message
     user = ctx.author
+    guild = ctx.guild
+    guildStarter(ctx.guild)
     # Than we get our query/url (you can use both!)
     if user.voice is None:
         # If the user doesn't stay in any voice channel, we send him a message
@@ -99,9 +101,9 @@ async def play(ctx, titolo: str):
 
     # If we are listening to a song, we add the new song to the queue
     if voice.is_playing() or voice.is_paused():
-        list_queue.append(info)
-        url_list.append(ytlink + info['id'])
-        list_titles.append(info['title'])
+        list_queue[guild].append(info)
+        url_list[guild].append(ytlink + info['id'])
+        list_titles[guild].append(info['title'])
         await ctx.send(embed=discord.Embed(title="Brano messo in coda",
                                            description="Il brano **" + info['title'] +
                                                        "** è stato messo in coda",
@@ -116,13 +118,16 @@ async def play(ctx, titolo: str):
     # If all goes as planned while searching the song on youtube, we finally start to play the song
     try:
         voice.play(discord.FFmpegPCMAudio(info['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: queue(ctx))
-        voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[0])
+        voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
     except:
         await ctx.send(embed=discord.Embed(title="Errore",
                                            description="Ci si è inceppato il disco...",
                                            color=colore))
         return
-    nowPlaying[0] = ytlink + info['id']
+    if len(nowPlaying[guild]) == 0:
+        nowPlaying[guild].append(ytlink + info['id'])
+    else:
+        nowPlaying[guild][0] = ytlink + info['id']
 
 
 # ---QUEUE FUNCTIONS--- #
@@ -130,31 +135,41 @@ async def play(ctx, titolo: str):
 
 def queue(ctx):
     # This is where our queue gets underway
-    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if len(list_queue) != 0:
+    guild = ctx.guild
+    voice = discord.utils.get(bot.voice_clients, guild=guild)
+    if len(list_queue[guild]) != 0:
         voice.play(discord.FFmpegPCMAudio(list_queue[0]['formats'][0]['url'], **FFMPEG_OPTS),
                    after=lambda e: queue(ctx))
-        voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[0])
-        nowPlaying[0] = url_list[0]
+        voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
+        nowPlaying[guild][0] = url_list[guild][0]
         channel = bot.get_channel(ctx.channel_id)
         bot.loop.create_task(channel.send(embed=discord.Embed(title="Ora in Riproduzione",
-                                          description="Stiamo elaborando il brano **" + list_titles[0] + "**\n"
+                                          description="Stiamo elaborando il brano **" + list_titles[guild][0] + "**\n"
                                           "Attendere qualche istante...", color=colore)))
-        del list_queue[0]
-        del list_titles[0]
-        del url_list[0]
+        del list_queue[guild][0]
+        del list_titles[guild][0]
+        del url_list[guild][0]
 
 
-def svuota_coda():
-    list_titles.clear()
-    list_queue.clear()
-    url_list.clear()
+def svuota_coda(guild):
+    list_titles[guild].clear()
+    list_queue[guild].clear()
+    url_list[guild].clear()
+
+def guildStarter(guild):
+    if list_queue.get(guild) is None:
+        list_queue[guild] = list()
+        list_titles[guild] = list()
+        url_list[guild] = list()
+        nowPlaying[guild] = list()
+        global_volume[guild] = [0.25]
+
 
 
 @slash.slash(name="clear", description="Rimuove tutti i brani nella coda")
 async def clear(ctx):
     if await permessi(ctx):
-        svuota_coda()
+        svuota_coda(ctx.guild)
         await ctx.send(embed=discord.Embed(title="Coda Svuotata",
                                            description="Nella coda ora non è presente nessun brano",
                                            color=colore))
@@ -165,12 +180,12 @@ async def coda(ctx):
     contatore = 0
     stringa = ""
     if await permessi(ctx):
-        if len(list_queue) == 0:
+        if len(list_queue[ctx.guild]) == 0:
             await ctx.send(embed=discord.Embed(title="Coda vuota",
                                                description="Nella coda non è presente nessun brano",
                                                color=colore))
         else:
-            for elemento in list_titles:
+            for elemento in list_titles[ctx.guild]:
                 contatore += 1
                 stringa += str(contatore) + "- " + elemento + "\n"
             await ctx.send(embed=discord.Embed(title="Coda",
@@ -187,7 +202,7 @@ async def np(ctx):
                                                description="Il silenzio regna su di noi...",
                                                color=colore))
         else:
-            await ctx.send(nowPlaying[0])
+            await ctx.send(nowPlaying[ctx.guild][0])
 
 
 @slash.slash(name="remove", description="Rimuove un brano dalla coda",
@@ -195,14 +210,14 @@ async def np(ctx):
 async def remove(ctx, indice: int):
     if await(permessi(ctx)):
         indice = indice - 1
-        if indice < len(list_queue):
+        if indice < len(list_queue[ctx.guild]):
             await ctx.send(embed=discord.Embed(title="Brano Skippato",
-                                               description="Il brano **" + list_titles[indice] + "** "
+                                               description="Il brano **" + list_titles[ctx.guild][indice] + "** "
                                                            "è stato eliminato dalla coda",
                                                color=colore))
-            del list_queue[indice]
-            del list_titles[indice]
-            del url_list[indice]
+            del list_queue[ctx.guild][indice]
+            del list_titles[ctx.guild][indice]
+            del url_list[ctx.guild][indice]
         else:
             await ctx.send(embed=discord.Embed(title="Indice inesistente",
                                                description="Non esiste nessun brano con tale indice nella coda",
@@ -219,11 +234,11 @@ async def volume(ctx, *volume: int):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         try:
-            volume = volume[0]
+            volume = volume[ctx.guild][0]
         except:
             # If we get a !volume command without args, we simply print the actual volume
             await ctx.send(embed=discord.Embed(title="Volume",
-                                               description="Il volume al momento è a " + str(global_volume[0]*100),
+                                               description="Il volume al momento è a " + str(global_volume[ctx.guild][0]*100),
                                                color=colore))
             return
         try:
@@ -237,7 +252,7 @@ async def volume(ctx, *volume: int):
         if 0 <= new_volume <= 100:
             try:
                 voice.source.volume = new_volume / 100
-                global_volume[0] = new_volume / 100
+                global_volume[ctx.guild][0] = new_volume / 100
             except:
                 await ctx.send(embed=discord.Embed(title="Errore",
                                                    description="Prima di impostare il volume, riproduci qualcosa!",
@@ -258,7 +273,7 @@ async def skip(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if voice.is_connected() and voice.is_playing():
-            if len(list_queue) == 0:
+            if len(list_queue[ctx.guild]) == 0:
                 await ctx.send(embed=discord.Embed(title="Riproduzione terminata",
                                                    description="I brani in coda sono terminati, aggiungine altri!",
                                                    color=colore))
