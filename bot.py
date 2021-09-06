@@ -227,14 +227,14 @@ async def remove(ctx, indice: int):
 # ---END OF QUEUE FUNCTIONS--- #
 
 
-@slash.slash(name="volume", description="Mostra a che livello è il volume e permette di modificarlo",
-             options=[create_option("vol", "Inserisci un valore da 0 a 100", 4, False)])
-async def volume(ctx, *vol: int):
+@slash.slash(name="volume", description="Modifica il volume",
+             options=[create_option("value", "Inserisci un valore da 0 a 100", 4, True)],)
+async def volume(ctx, value):
     # Volume manager
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         try:
-            volume = vol[0]
+            volume = value
         except:
             # If we get a !volume command without args, we simply print the actual volume
             await ctx.send(embed=discord.Embed(title="Volume",
