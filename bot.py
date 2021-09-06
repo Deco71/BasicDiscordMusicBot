@@ -228,13 +228,13 @@ async def remove(ctx, indice: int):
 
 
 @slash.slash(name="volume", description="Mostra a che livello è il volume e permette di modificarlo",
-             options=[create_option("volume", "Inserisci un valore da 0 a 100", 4, False)])
-async def volume(ctx, *volume: int):
+             options=[create_option("vol", "Inserisci un valore da 0 a 100", 4, False)])
+async def volume(ctx, *vol: int):
     # Volume manager
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         try:
-            volume = volume[ctx.guild][0]
+            volume = vol[0]
         except:
             # If we get a !volume command without args, we simply print the actual volume
             await ctx.send(embed=discord.Embed(title="Volume",
@@ -291,7 +291,7 @@ async def skip(ctx):
 @slash.slash(name="disconnect", description="Disconnette il bot musicale dalla chat vocale")
 async def disconnect(ctx):
     if await permessi(ctx):
-        svuota_coda()
+        svuota_coda(ctx.guild)
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if voice.is_connected():
             await voice.disconnect()
@@ -341,7 +341,7 @@ async def resume(ctx):
 @slash.slash(name="stop", description="Interrompe la riproduzione e elimina la coda")
 async def stop(ctx):
     if await permessi(ctx):
-        svuota_coda()
+        svuota_coda(ctx.guild)
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if voice.is_playing():
             await ctx.send(embed=discord.Embed(title="Stop",
