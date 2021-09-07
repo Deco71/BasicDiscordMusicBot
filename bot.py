@@ -76,27 +76,32 @@ async def play(ctx, titolo: str):
         return
     # Then we try to connect to his channel
     voice_channel = user.voice.channel
-    try:
-        await voice_channel.connect()
-    except:
-        # If you have channels that the bot cannot see on your server, you have to manage that code here
-        pass
     # We take the "bot voice" instance
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-
+    # If there is no istance, we connect the bot
+    if voice is None:
+        await voice_channel.connect()
+        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     # Then we search the video on yt
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(titolo, download=False)
-        except:
+        except youtube_dl.utils.DownloadError:
             try:
                 info = ydl.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
-            except:
+            except youtube_dl.utils.DownloadError:
                 await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
-                                           description="Non siamo riusciti a reperire il brano richiesto \n"
-                                                       "Prova a formulare la tua richiesta nella forma: \n"
-                                                       "'Artista - Titolo Brano'\n",
-                                           color=colore))
+                                                   description="Non siamo riusciti a reperire il brano richiesto \n"
+                                                               "Prova a formulare la tua richiesta nella forma: \n"
+                                                               "'Artista - Titolo Brano'\n",
+                                                   color=colore))
+                return
+            except IndexError:
+                await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
+                                                   description="Non siamo riusciti a reperire il brano richiesto \n"
+                                                               "Prova a formulare la tua richiesta nella forma: \n"
+                                                               "'Artista - Titolo Brano'\n",
+                                                   color=colore))
                 return
 
     # If we are listening to a song, we add the new song to the queue
@@ -119,9 +124,10 @@ async def play(ctx, titolo: str):
     try:
         voice.play(discord.FFmpegPCMAudio(info['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: queue(ctx))
         voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
-    except:
+    except discord.errors.ClientException:
         await ctx.send(embed=discord.Embed(title="Errore",
-                                           description="Ci si è inceppato il disco...",
+                                           description="Ci si è inceppato il disco... \n"
+                                                       "Potrebbe risolvere darmi i permessi di amministratore",
                                            color=colore))
         return
     if len(nowPlaying[guild]) == 0:
@@ -156,6 +162,7 @@ def svuota_coda(guild):
     list_queue[guild].clear()
     url_list[guild].clear()
 
+
 def guildStarter(guild):
     if list_queue.get(guild) is None:
         list_queue[guild] = list()
@@ -163,7 +170,6 @@ def guildStarter(guild):
         url_list[guild] = list()
         nowPlaying[guild] = list()
         global_volume[guild] = [0.25]
-
 
 
 @slash.slash(name="clear", description="Rimuove tutti i brani nella coda")
@@ -206,7 +212,7 @@ async def np(ctx):
 
 
 @slash.slash(name="remove", description="Rimuove un brano dalla coda",
-             options=[create_option("indice", "Indice del brano da rimuovere (puoi reperire gli indici con il comando queue)", 4, True)],)
+             options=[create_option("indice", "Indice del brano da rimuovere", 4, True)],)
 async def remove(ctx, indice: int):
     if await(permessi(ctx)):
         indice = indice - 1
@@ -225,6 +231,15 @@ async def remove(ctx, indice: int):
 
 
 # ---END OF QUEUE FUNCTIONS--- #
+'''# To Do
+@slash.slash(name="lvolume", description="Mostra il livello attuale del volume")
+async def lvolume(ctx):
+    if await permessi(ctx):
+        await ctx.send(embed=discord.Embed(title="Volume",
+                                           description="Il volume al momento è a "
+                                                       + str(global_volume[ctx.guild][0] * 100),
+                                           color=colore))
+'''
 
 
 @slash.slash(name="volume", description="Modifica il volume",
@@ -233,27 +248,12 @@ async def volume(ctx, value):
     # Volume manager
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        try:
-            volume = value
-        except:
-            # If we get a !volume command without args, we simply print the actual volume
-            await ctx.send(embed=discord.Embed(title="Volume",
-                                               description="Il volume al momento è a " + str(global_volume[ctx.guild][0]*100),
-                                               color=colore))
-            return
-        try:
-            new_volume = float(volume)
-        except:
-            # Input control
-            await ctx.send(embed=discord.Embed(title="Errore",
-                                               description="Per favore inserire un valore da 0 a 100",
-                                               color=colore))
-            return
+        new_volume = float(value)
         if 0 <= new_volume <= 100:
             try:
                 voice.source.volume = new_volume / 100
                 global_volume[ctx.guild][0] = new_volume / 100
-            except:
+            except AttributeError:
                 await ctx.send(embed=discord.Embed(title="Errore",
                                                    description="Prima di impostare il volume, riproduci qualcosa!",
                                                    color=colore))
@@ -363,14 +363,13 @@ async def permessi(ctx):
                                            description="Per usare il bot musicale, connettiti ad un canale vocale",
                                            color=colore))
         return False
-    else:
-        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        if voice is None:
-            await ctx.send(embed=discord.Embed(title="Errore",
-                                               description="Per usare questo comando devi prima chiamare il bot "
-                                                           "con il comando !play",
-                                               color=colore))
-            return False
+    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    if voice is None:
+        await ctx.send(embed=discord.Embed(title="Errore",
+                                           description="Per usare questo comando devi prima chiamare il bot "
+                                                       "con il comando /play",
+                                           color=colore))
+        return False
     # If all is good, just return True
     return True
 
