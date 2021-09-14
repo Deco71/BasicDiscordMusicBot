@@ -18,7 +18,6 @@ ytlink = "https://www.youtube.com/watch?v="
 list_queue = dict()
 ydl_opts = {
     'format': 'bestaudio/best',
-    'noplaylist': 'True',
     'geo_bypass': 'True',
     'max_filesize': 10485760,
     'postprocessors': [{
@@ -83,12 +82,17 @@ async def play(ctx, titolo: str):
         await voice_channel.connect()
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     # Then we search the video on yt
+    if titolo.__contains__("playlist"):
+        await ctx.send(embed=discord.Embed(title="Caricamento Playlist",
+                                           description="Sto elaborando la playlist\n"
+                                                       "Potrei impiegarci un po'",
+                                           color=colore))
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(titolo, download=False)
         except youtube_dl.utils.DownloadError:
             try:
-                info = ydl.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
+                info = ydl.extract_info(f"ytsearch:{titolo}", download=False)['entries']
             except youtube_dl.utils.DownloadError:
                 await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
                                                    description="Non siamo riusciti a reperire il brano richiesto \n"
@@ -104,25 +108,37 @@ async def play(ctx, titolo: str):
                                                    color=colore))
                 return
 
-    # If we are listening to a song, we add the new song to the queue
-    if voice.is_playing() or voice.is_paused():
-        list_queue[guild].append(info)
-        url_list[guild].append(ytlink + info['id'])
-        list_titles[guild].append(info['title'])
-        await ctx.send(embed=discord.Embed(title="Brano messo in coda",
-                                           description="Il brano **" + info['title'] +
-                                                       "** è stato messo in coda",
+    if 'entries' in info:
+        await ctx.send(embed=discord.Embed(title="Playlist messa in coda",
+                                           description="La playlist **" + info['title'] +
+                                                       "** è stata messa in coda",
                                            color=colore))
+        for i in info["entries"]:
+            await reproduce(ctx, voice, i, False)
+    else:
+        await reproduce(ctx, voice, info, True)
+
+
+async def reproduce(ctx, voice, i, bool):
+    guild = ctx.guild
+    if voice.is_playing() or voice.is_paused():
+        list_queue[guild].append(i)
+        url_list[guild].append(ytlink + i['id'])
+        list_titles[guild].append(i['title'])
+        if bool:
+            await ctx.send(embed=discord.Embed(title="Brano messo in coda",
+                                               description="Il brano **" + i['title'] +
+                                                           "** è stato messo in coda",
+                                               color=colore))
         return
 
     await ctx.send(embed=discord.Embed(title="Elaborazione brano",
-                                       description="Stiamo elaborando il brano **" + info['title'] + "**\n"
-                                                   "Attendere qualche istante...",
+                                       description="Stiamo elaborando il brano **" + i['title'] + "**\n"
+                                                                                                  "Attendere qualche istante...",
                                        color=colore))
-
     # If all goes as planned while searching the song on youtube, we finally start to play the song
     try:
-        voice.play(discord.FFmpegPCMAudio(info['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: queue(ctx))
+        voice.play(discord.FFmpegPCMAudio(i['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: queue(ctx))
         voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
     except discord.errors.ClientException:
         await ctx.send(embed=discord.Embed(title="Errore",
@@ -131,9 +147,9 @@ async def play(ctx, titolo: str):
                                            color=colore))
         return
     if len(nowPlaying[guild]) == 0:
-        nowPlaying[guild].append(ytlink + info['id'])
+        nowPlaying[guild].append(ytlink + i['id'])
     else:
-        nowPlaying[guild][0] = ytlink + info['id']
+        nowPlaying[guild][0] = ytlink + i['id']
 
 
 # ---QUEUE FUNCTIONS--- #
