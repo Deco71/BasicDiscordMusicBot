@@ -13,9 +13,20 @@ f = open("tokenBot.txt", encoding='utf8')
 # You must save your token in a txt file called "tokenBot.txt" and put this file in the directory with your bot.py
 TOKEN = f.read().strip()
 COMMAND_PREFIX = "/"
-colore = 0xd719c1
+colore = 0x6897e0
 ytlink = "https://www.youtube.com/watch?v="
 list_queue = dict()
+ydl_opts_no = {
+    'format': 'bestaudio/best',
+    'geo_bypass': 'True',
+    'noplaylist': 'True',
+    'max_filesize': 10485760,
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }],
+}
 ydl_opts = {
     'format': 'bestaudio/best',
     'geo_bypass': 'True',
@@ -42,7 +53,7 @@ youtube_dl.utils.std_headers['Cookie'] = ''
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents, help_command=None)
-slash = SlashCommand(bot, sync_commands=True)
+slash = SlashCommand(bot, sync_commands=False)
 
 
 # ---------------------------------------------- #
@@ -82,7 +93,7 @@ async def play(ctx, titolo: str):
         await voice_channel.connect()
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     # Then we search the video on yt
-    if titolo.__contains__("playlist"):
+    if titolo.__contains__("list="):
         await ctx.send(embed=discord.Embed(title="Caricamento Playlist",
                                            description="Sto elaborando la playlist\n"
                                                        "Potrei impiegarci un po'",
@@ -91,22 +102,23 @@ async def play(ctx, titolo: str):
         try:
             info = ydl.extract_info(titolo, download=False)
         except youtube_dl.utils.DownloadError:
-            try:
-                info = ydl.extract_info(f"ytsearch:{titolo}", download=False)['entries']
-            except youtube_dl.utils.DownloadError:
-                await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
-                                                   description="Non siamo riusciti a reperire il brano richiesto \n"
-                                                               "Prova a formulare la tua richiesta nella forma: \n"
-                                                               "'Artista - Titolo Brano'\n",
-                                                   color=colore))
-                return
-            except IndexError:
-                await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
-                                                   description="Non siamo riusciti a reperire il brano richiesto \n"
-                                                               "Prova a formulare la tua richiesta nella forma: \n"
-                                                               "'Artista - Titolo Brano'\n",
-                                                   color=colore))
-                return
+            with youtube_dl.YoutubeDL(ydl_opts_no) as ydln:
+                try:
+                    info = ydln.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
+                except youtube_dl.utils.DownloadError:
+                    await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
+                                                       description="Non siamo riusciti a reperire il brano richiesto \n"
+                                                                   "Prova a formulare la tua richiesta nella forma: \n"
+                                                                   "'Artista - Titolo Brano'\n",
+                                                       color=colore))
+                    return
+                except IndexError:
+                    await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
+                                                       description="Non siamo riusciti a reperire il brano richiesto \n"
+                                                                   "Prova a formulare la tua richiesta nella forma: \n"
+                                                                   "'Artista - Titolo Brano'\n",
+                                                       color=colore))
+                    return
 
     if 'entries' in info:
         await ctx.send(embed=discord.Embed(title="Playlist messa in coda",
@@ -114,13 +126,12 @@ async def play(ctx, titolo: str):
                                                        "** è stata messa in coda",
                                            color=colore))
         for i in info["entries"]:
-            await reproduce(ctx, voice, i, False)
+            await reproduce(ctx, voice, guild, i, False)
     else:
-        await reproduce(ctx, voice, info, True)
+        await reproduce(ctx, voice, guild, info, True)
 
 
-async def reproduce(ctx, voice, i, bool):
-    guild = ctx.guild
+async def reproduce(ctx, voice, guild, i, bool):
     if voice.is_playing() or voice.is_paused():
         list_queue[guild].append(i)
         url_list[guild].append(ytlink + i['id'])
@@ -134,7 +145,7 @@ async def reproduce(ctx, voice, i, bool):
 
     await ctx.send(embed=discord.Embed(title="Elaborazione brano",
                                        description="Stiamo elaborando il brano **" + i['title'] + "**\n"
-                                                                                                  "Attendere qualche istante...",
+                                                   "Attendere qualche istante...",
                                        color=colore))
     # If all goes as planned while searching the song on youtube, we finally start to play the song
     try:
