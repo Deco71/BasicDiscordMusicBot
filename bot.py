@@ -38,6 +38,8 @@ ydl_opts = {
     }],
 }
 FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10'}
+
+
 list_titles = dict()
 url_list = dict()
 nowPlaying = dict()
