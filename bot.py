@@ -1,10 +1,8 @@
-from discord_slash.utils.manage_commands import create_option
-from discord_slash import SlashCommand
 from discord.ext import commands
 import youtube_dl.utils
 import youtube_dl
 import discord
-
+from discord import Option
 # ---------------------------------------------- #
 # ----------- BOT VARIABLES SECTION ------------ #
 # ---------------------------------------------- #
@@ -55,26 +53,19 @@ youtube_dl.utils.std_headers['Cookie'] = ''
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents, help_command=None)
-slash = SlashCommand(bot, sync_commands=False)
+#slash = SlashCommand(bot, sync_commands=False)
 
 
 # ---------------------------------------------- #
 # ------------ MUSIC BOT SECTION --------------- #
 # ---------------------------------------------- #
 
-'''
-Please note that when first running your bot the slash commands could appear on your server even one after the startup.
-This is caused by the Discord API and there's nothing I can do. 
-For making things faster if you're using it for only specifics servers, you can use the guilds_ids parameter
-when creating the slash command.
-More information about this can be found here: https://discord-py-slash-command.readthedocs.io/en/latest/quickstart.html
-Happy coding!
-'''
 
-
-@slash.slash(name="play", description="Riproduce un brano da youtube",
-             options=[create_option("titolo", "Inserisci un link o un titolo di un video di youtube", 3, True)],)
-async def play(ctx, titolo: str):
+@bot.slash_command(name="play", description="Riproduce un brano da youtube")
+async def play(ctx: discord.ApplicationContext,
+               titolo: Option(str, "Inserisci un link o un titolo di un video di youtube", required=True)):
+    #gender: Option(str, "Choose your gender", choices=["Male", "Female", "Other"]),
+    #age: Option(int, "Enter your age", min_value=1, max_value=99, default=18)):
     # We first search for the user that wrote the message
     user = ctx.author
     guild = ctx.guild
@@ -153,7 +144,8 @@ async def reproduce(ctx, voice, guild, i, bool):
     try:
         voice.play(discord.FFmpegPCMAudio(i['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: queue(ctx))
         voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
-    except discord.errors.ClientException:
+    except discord.errors.ClientException as e:
+        print(e)
         await ctx.send(embed=discord.Embed(title="Errore",
                                            description="Ci si è inceppato il disco... \n"
                                                        "Potrebbe risolvere darmi i permessi di amministratore",
@@ -201,7 +193,7 @@ def guildStarter(guild):
         global_volume[guild] = [0.25]
 
 
-@slash.slash(name="clear", description="Rimuove tutti i brani nella coda")
+@bot.slash_command(name="clear", description="Rimuove tutti i brani nella coda")
 async def clear(ctx):
     if await permessi(ctx):
         svuota_coda(ctx.guild)
@@ -210,7 +202,7 @@ async def clear(ctx):
                                            color=colore))
 
 
-@slash.slash(name="queue", description="Mostra la coda")
+@bot.slash_command(name="queue", description="Mostra la coda")
 async def coda(ctx):
     contatore = 0
     stringa = ""
@@ -228,7 +220,7 @@ async def coda(ctx):
                                                color=colore))
 
 
-@slash.slash(name="nowPlaying", description="Mostra il brano attualmente in riproduzione")
+@bot.slash_command(name="nowplaying", description="Mostra il brano attualmente in riproduzione")
 async def np(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -240,9 +232,9 @@ async def np(ctx):
             await ctx.send(nowPlaying[ctx.guild][0])
 
 
-@slash.slash(name="remove", description="Rimuove un brano dalla coda",
-             options=[create_option("indice", "Indice del brano da rimuovere", 4, True)],)
-async def remove(ctx, indice: int):
+@bot.slash_command(name="remove", description="Rimuove un brano dalla coda")
+async def remove(ctx: discord.ApplicationContext,
+                 indice: Option(int, "Indice del brano da rimuovere", required=True)):
     if await(permessi(ctx)):
         indice = indice - 1
         if indice < len(list_queue[ctx.guild]):
@@ -271,9 +263,9 @@ async def lvolume(ctx):
 '''
 
 
-@slash.slash(name="volume", description="Modifica il volume",
-             options=[create_option("value", "Inserisci un valore da 0 a 100", 4, True)],)
-async def volume(ctx, value):
+@bot.slash_command(name="volume", description="Modifica il volume")
+async def volume(ctx: discord.ApplicationContext,
+                 value: Option(int, "", min_value=1, max_value=100, default=50, required = True)):
     # Volume manager
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -297,7 +289,7 @@ async def volume(ctx, value):
                                                color=colore))
 
 
-@slash.slash(name="skip", description="Salta al brano successivo")
+@bot.slash_command(name="skip", description="Salta al brano successivo")
 async def skip(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -317,7 +309,7 @@ async def skip(ctx):
                                                color=colore))
 
 
-@slash.slash(name="disconnect", description="Disconnette il bot musicale dalla chat vocale")
+@bot.slash_command(name="disconnect", description="Disconnette il bot musicale dalla chat vocale")
 async def disconnect(ctx):
     if await permessi(ctx):
         svuota_coda(ctx.guild)
@@ -333,7 +325,7 @@ async def disconnect(ctx):
                                                color=colore))
 
 
-@slash.slash(name="pause", description="Mette in pausa il brano in riproduzione")
+@bot.slash_command(name="pause", description="Mette in pausa il brano in riproduzione")
 async def pause(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -348,7 +340,7 @@ async def pause(ctx):
                                                color=colore))
 
 
-@slash.slash(name="resume", description="Riprende la riproduzione del brano")
+@bot.slash_command(name="resume", description="Riprende la riproduzione del brano")
 async def resume(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -367,7 +359,7 @@ async def resume(ctx):
                                                color=colore))
 
 
-@slash.slash(name="stop", description="Interrompe la riproduzione e elimina la coda")
+@bot.slash_command(name="stop", description="Interrompe la riproduzione e elimina la coda")
 async def stop(ctx):
     if await permessi(ctx):
         svuota_coda(ctx.guild)
