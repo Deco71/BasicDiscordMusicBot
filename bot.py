@@ -100,7 +100,8 @@ async def play(ctx: discord.ApplicationContext,
             with youtube_dl.YoutubeDL(ydl_opts_no) as ydln:
                 try:
                     info = ydln.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
-                except youtube_dl.utils.DownloadError:
+                except youtube_dl.utils.DownloadError as e:
+                    print(e)
                     await ctx.respond(embed=discord.Embed(title="Errore nel reperimento del brano",
                                                        description="Non siamo riusciti a reperire il brano richiesto \n"
                                                                    "Prova a formulare la tua richiesta nella forma: \n"
@@ -145,7 +146,8 @@ async def reproduce(ctx, voice, guild, i, bool):
     try:
         voice.play(discord.FFmpegPCMAudio(i['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: queue(ctx))
         voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
-    except discord.errors.ClientException:
+    except discord.errors.ClientException as e:
+        print(e)
         await ctx.respond(embed=discord.Embed(title="Errore",
                                            description="Ci si è inceppato il disco... \n"
                                                        "Potrebbe risolvere darmi i permessi di amministratore",
