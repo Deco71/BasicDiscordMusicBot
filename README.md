@@ -1,7 +1,7 @@
 # BasicDiscordMusicBot
 
 Like the title says, it's a very basic Music Bot for Discord written in Python using:
-discord.py,
+pycord,
 youtube_dl,
 discord_slash
 and FFMpeg.
