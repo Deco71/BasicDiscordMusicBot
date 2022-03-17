@@ -86,6 +86,14 @@ async def play(ctx: discord.ApplicationContext,
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     # Then we search the video on yt
     if titolo.__contains__("list="):
+        if not(voice.is_playing()):
+            await ctx.respond(embed=discord.Embed(title="Warning",
+                                               description="Per problemi tecnici, non è posibile riprodurre una playlist\n"
+                                                           "mentre non sto riproducendo qualcosa.\n"
+                                                           "Inoltre è consigliabile evitare di inserire playlist con più di 50 brani\n"
+                                                           "Riproduci prima un brano e poi ritenta",
+                                               color=colore))
+            return
         await ctx.respond(embed=discord.Embed(title="Caricamento Playlist",
                                            description="Sto elaborando la playlist\n"
                                                        "Potrei impiegarci un po'\n",
@@ -119,15 +127,10 @@ async def play(ctx: discord.ApplicationContext,
                                            description="La playlist **" + info['title'] +
                                                        "** è stata messa in coda",
                                            color=colore))
-        try:
-            await voice_channel.connect()
-        except discord.errors.ClientException as e:
-            print(e)
-        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         for i in info["entries"]:
             await reproduce(ctx, voice, guild, i, True)
     else:
-            await reproduce(ctx, voice, guild, info, False)
+        await reproduce(ctx, voice, guild, info, False)
 
 
 async def reproduce(ctx, voice, guild, i, playlist):
