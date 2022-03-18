@@ -1,4 +1,5 @@
-from operator import ne
+#I Know this code is shit, but it works! (and I don't have the time to rewrite it) Just live with it <3
+#Wanna see something better? Look at UniBotJS!
 from discord.ext import commands
 import youtube_dl.utils
 import youtube_dl
@@ -30,7 +31,7 @@ ydl_opts_no = {
 ydl_opts = {
     'format': 'bestaudio/best',
     'geo_bypass': 'True',
-    'max_filesize': 10485760,
+    'noplaylist': 'True',
     'skip_download': True,
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
@@ -95,7 +96,7 @@ async def play(ctx: discord.ApplicationContext,
                                               description="Sto elaborando la playlist\n",
                                               color=colore))
         playlistURL[guild].append(titolo)
-        playlistIndex[guild][titolo] = 1
+        playlistIndex[guild].append(1)
         playlist(ctx, titolo)
         return
     else:
@@ -161,10 +162,10 @@ def queue(ctx):
     # This is where our queue gets underway
     guild = ctx.guild
     voice = discord.utils.get(bot.voice_clients, guild=guild)
-    if type(list_queue[guild][0]) == str:
-        playlist(ctx)
-        return
     if len(list_queue[guild]) != 0:
+        if type(list_queue[guild][0]) == str:
+            playlist(ctx)
+            return
         voice.play(discord.FFmpegPCMAudio(list_queue[guild][0]['formats'][0]['url'], **FFMPEG_OPTS),
                    after=lambda e: queue(ctx))
         voice.source = discord.PCMVolumeTransformer(
@@ -184,11 +185,13 @@ def queue(ctx):
 def playlist(ctx, newURL=None):
     guild = ctx.guild
     voice = discord.utils.get(bot.voice_clients, guild=guild)
+    index = 0
     if newURL is not None:
         titolo = newURL
+        index = playlistIndex[guild][len(playlistIndex[guild]) - 1]
     else:
         titolo = playlistURL[guild][0]
-    index = playlistIndex[guild][titolo]
+        index = playlistIndex[guild][0]
     ydl_opts_p = {
     'format': 'bestaudio/best',
     'geo_bypass': 'True',
@@ -215,14 +218,15 @@ def playlist(ctx, newURL=None):
         info = info['entries'][0]
     except IndexError:
         playlistURL[guild].pop(0)
-        playlistIndex[guild].pop(titolo, "None")
+        playlistIndex[guild].pop(0)
         del list_queue[guild][0]
         del list_titles[guild][0]
         del url_list[guild][0]
-        if len(playlistURL[guild]) != 0:
+        if len(list_queue[guild]) != 0 and type(list_queue[guild][0]) == str:
             playlist(ctx)
         else:
             queue(ctx)
+        return
     if newURL is not None:
         bot.loop.create_task(ctx.send(embed=discord.Embed(title="Playlist messa in coda",
                                       description="La playlist **" + ptitle +
@@ -235,7 +239,7 @@ def playlist(ctx, newURL=None):
         return 
     voice.play(discord.FFmpegPCMAudio(info['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: playlist(ctx))
     voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
-    playlistIndex[ctx.guild][titolo] += 1
+    playlistIndex[ctx.guild][0] += 1
     if len(nowPlaying[guild]) == 0:
         nowPlaying[guild].append(ytlink + info['id'])
     else:
@@ -252,7 +256,7 @@ def svuota_coda(guild):
     list_titles[guild].clear()
     list_queue[guild].clear()
     url_list[guild].clear()
-    playlistIndex[guild] = dict()
+    playlistIndex[guild].clear()
     playlistURL[guild].clear()
 
 
@@ -264,7 +268,7 @@ def guildStarter(guild):
         url_list[guild] = list()
         nowPlaying[guild] = list()
         global_volume[guild] = [0.25]
-        playlistIndex[guild] = dict()
+        playlistIndex[guild] = list()
         playlistURL[guild] = list()
 
 
@@ -361,14 +365,9 @@ async def skip(ctx):
     if await permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if voice.is_connected() and voice.is_playing():
-            if len(list_queue[ctx.guild]) == 0:
-                await ctx.respond(embed=discord.Embed(title="Riproduzione terminata",
-                                                      description="I brani in coda sono terminati, aggiungine altri!",
-                                                      color=colore))
-            else:
-                await ctx.respond(embed=discord.Embed(title="Brano Skippato",
-                                                      description="Il brano è stato skippato",
-                                                      color=colore))
+            await ctx.respond(embed=discord.Embed(title="Brano Skippato",
+                                                  description="Il brano è stato skippato",
+                                                  color=colore))
             voice.stop()
         else:
             await ctx.respond(embed=discord.Embed(title="Errore",
@@ -460,13 +459,6 @@ async def permessi(ctx):
         return False
     # If all is good, just return True
     return True
-
-# ---------------------------------------------- #
-# ------------ BOT.EVENT SECTION --------------- #
-# ---------------------------------------------- #
-
-# Some easter eggs in here, nothing special
-
 
 @bot.event
 async def on_ready():
