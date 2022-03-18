@@ -19,6 +19,8 @@ ydl_opts_no = {
     'format': 'bestaudio/best',
     'geo_bypass': 'True',
     'noplaylist': 'True',
+    'flat_playlist': True, 
+    'skip_download': True,
     'max_filesize': 10485760,
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
@@ -30,6 +32,8 @@ ydl_opts = {
     'format': 'bestaudio/best',
     'geo_bypass': 'True',
     'max_filesize': 10485760,
+    'flat_playlist': True,
+    'skip_download': True,
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'mp3',
@@ -86,14 +90,6 @@ async def play(ctx: discord.ApplicationContext,
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     # Then we search the video on yt
     if titolo.__contains__("list="):
-        if not(voice.is_playing()):
-            await ctx.respond(embed=discord.Embed(title="Warning",
-                                               description="Per problemi tecnici, non è posibile riprodurre una playlist\n"
-                                                           "mentre non sto riproducendo qualcosa.\n"
-                                                           "Inoltre è consigliabile evitare di inserire playlist con più di 50 brani\n"
-                                                           "Riproduci prima un brano e poi ritenta",
-                                               color=colore))
-            return
         await ctx.respond(embed=discord.Embed(title="Caricamento Playlist",
                                            description="Sto elaborando la playlist\n"
                                                        "Potrei impiegarci un po'\n",
@@ -122,15 +118,17 @@ async def play(ctx: discord.ApplicationContext,
                                                        color=colore))
                     return
 
+    print(info)
+    print("Ehi queste sono le info")
     if 'entries' in info:
         await ctx.send(embed=discord.Embed(title="Playlist messa in coda",
                                            description="La playlist **" + info['title'] +
                                                        "** è stata messa in coda",
                                            color=colore))
-        for i in info["entries"]:
-            await reproduce(ctx, voice, guild, i, True)
-    else:
-        await reproduce(ctx, voice, guild, info, False)
+        #for i in info["entries"]:
+            #await reproduce(ctx, voice, guild, i, True)
+    #else:
+        #await reproduce(ctx, voice, guild, info, False)
 
 
 async def reproduce(ctx, voice, guild, i, playlist):
