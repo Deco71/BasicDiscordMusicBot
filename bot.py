@@ -1,5 +1,3 @@
-#I Know this code is shit, but it works! (and I don't have the time to rewrite it) Just live with it <3
-#Wanna see something better? Look at UniBotJS!
 from discord.ext import commands
 import youtube_dl.utils
 import youtube_dl
@@ -15,19 +13,6 @@ TOKEN = f.read().strip()
 COMMAND_PREFIX = "/"
 colore = 0x6897e0
 ytlink = "https://www.youtube.com/watch?v="
-list_queue = dict()
-ydl_opts_no = {
-    'format': 'bestaudio/best',
-    'geo_bypass': 'True',
-    'noplaylist': 'True',
-    'skip_download': True,
-    'max_filesize': 10485760,
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    }],
-}
 ydl_opts = {
     'format': 'bestaudio/best',
     'geo_bypass': 'True',
@@ -39,16 +24,24 @@ ydl_opts = {
         'preferredquality': '192',
     }],
 }
+ydl_opts_p = {
+    'format': 'bestaudio/best',
+    'geo_bypass': 'True',
+    'skip_download': True,
+    'playlist_items': '0',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }]
+}
 FFMPEG_OPTS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10'}
 
 
-list_titles = dict()
-url_list = dict()
+list_queue = dict()
 nowPlaying = dict()
 global_volume = dict()
-playlistIndex = dict()
-playlistURL = dict()
 youtube_dl.utils.std_headers['Cookie'] = ''
 
 
@@ -95,9 +88,7 @@ async def play(ctx: discord.ApplicationContext,
         await ctx.respond(embed=discord.Embed(title="Caricamento Playlist",
                                               description="Sto elaborando la playlist\n",
                                               color=colore))
-        playlistURL[guild].append(titolo)
-        playlistIndex[guild].append(1)
-        playlist(ctx, titolo)
+        playlistSetter(ctx, titolo)
         return
     else:
         await ctx.respond(embed=discord.Embed(title="Elaborazione brano", color=colore))
@@ -105,31 +96,28 @@ async def play(ctx: discord.ApplicationContext,
         try:
             info = ydl.extract_info(titolo, download=False)
         except youtube_dl.utils.DownloadError:
-            with youtube_dl.YoutubeDL(ydl_opts_no) as ydln:
-                try:
-                    info = ydln.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
-                except youtube_dl.utils.DownloadError:
-                    await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
-                                                       description="Non siamo riusciti a reperire il brano richiesto \n"
-                                                                   "Prova a formulare la tua richiesta nella forma: \n"
-                                                                   "'Artista - Titolo Brano'\n",
-                                                       color=colore))
-                    return
-                except IndexError:
-                    await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
-                                                       description="Non siamo riusciti a reperire il brano richiesto \n"
-                                                                   "Prova a formulare la tua richiesta nella forma: \n"
-                                                                   "'Artista - Titolo Brano'\n",
-                                                       color=colore))
-                    return
-    await reproduce(ctx, voice, guild, info, False)
+            try:
+                info = ydl.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
+            except youtube_dl.utils.DownloadError:
+                await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
+                                                   description="Non siamo riusciti a reperire il brano richiesto \n"
+                                                               "Prova a formulare la tua richiesta nella forma: \n"
+                                                               "'Artista - Titolo Brano'\n",
+                                                   color=colore))
+                return
+            except IndexError:
+                await ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
+                                                   description="Non siamo riusciti a reperire il brano richiesto \n"
+                                                               "Prova a formulare la tua richiesta nella forma: \n"
+                                                               "'Artista - Titolo Brano'\n",
+                                                   color=colore))
+                return
+    await reproduce(ctx, voice, guild, info)
 
 
-async def reproduce(ctx, voice, guild, i, playlist):
+async def reproduce(ctx, voice, guild, i):
     if voice.is_playing() or voice.is_paused():
         list_queue[guild].append(i)
-        url_list[guild].append(ytlink + i['id'])
-        list_titles[guild].append(i['title'])
         await ctx.send(embed=discord.Embed(title="Brano messo in coda",
                                             description="Il brano **" + i['title'] +
                                             "** è stato messo in coda",
@@ -155,43 +143,12 @@ async def reproduce(ctx, voice, guild, i, playlist):
     else:
         nowPlaying[guild][0] = ytlink + i['id']
 
-
-# ---QUEUE FUNCTIONS--- #
-
-def queue(ctx):
-    # This is where our queue gets underway
+def playlist(ctx):
     guild = ctx.guild
     voice = discord.utils.get(bot.voice_clients, guild=guild)
-    if len(list_queue[guild]) != 0:
-        if type(list_queue[guild][0]) == str:
-            playlist(ctx)
-            return
-        voice.play(discord.FFmpegPCMAudio(list_queue[guild][0]['formats'][0]['url'], **FFMPEG_OPTS),
-                   after=lambda e: queue(ctx))
-        voice.source = discord.PCMVolumeTransformer(
-            voice.source, volume=global_volume[guild][0])
-        nowPlaying[guild][0] = url_list[guild][0]
-        channel = bot.get_channel(ctx.channel_id)
-        bot.loop.create_task(channel.send(embed=discord.Embed(title="Ora in Riproduzione",
-                                          description="Stiamo elaborando il brano **" +
-                                                              list_titles[guild][0] +
-                                                              "**\n"
-                                          "Attendere qualche istante...", color=colore)))
-        del list_queue[guild][0]
-        del list_titles[guild][0]
-        del url_list[guild][0]
-
-
-def playlist(ctx, newURL=None):
-    guild = ctx.guild
-    voice = discord.utils.get(bot.voice_clients, guild=guild)
-    index = 0
-    if newURL is not None:
-        titolo = newURL
-        index = playlistIndex[guild][len(playlistIndex[guild]) - 1]
-    else:
-        titolo = playlistURL[guild][0]
-        index = playlistIndex[guild][0]
+    if len(list_queue[guild]) != 0 and not list_queue[guild][0]['title'].startswith("**Playlist"):
+        queue(ctx)
+    index = list_queue[guild][0]['index']
     ydl_opts_p = {
     'format': 'bestaudio/best',
     'geo_bypass': 'True',
@@ -205,7 +162,7 @@ def playlist(ctx, newURL=None):
     }
     with youtube_dl.YoutubeDL(ydl_opts_p) as ydln:
         try:
-            info = ydln.extract_info(titolo, download=False)
+            info = ydln.extract_info(list_queue[guild][0]['url'], download=False)
         except youtube_dl.utils.DownloadError:
             bot.loop.create_task(ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
                                                description="Non siamo riusciti a reperire il brano richiesto \n"
@@ -217,29 +174,17 @@ def playlist(ctx, newURL=None):
         ptitle = info['title']
         info = info['entries'][0]
     except IndexError:
-        playlistURL[guild].pop(0)
-        playlistIndex[guild].pop(0)
         del list_queue[guild][0]
-        del list_titles[guild][0]
-        del url_list[guild][0]
-        if len(list_queue[guild]) != 0 and type(list_queue[guild][0]) == str:
+        if len(list_queue[guild]) != 0 and list_queue[guild][0]['title'].startswith("**Playlist"):
             playlist(ctx)
         else:
             queue(ctx)
         return
-    if newURL is not None:
-        bot.loop.create_task(ctx.send(embed=discord.Embed(title="Playlist messa in coda",
-                                      description="La playlist **" + ptitle +
-                                                  "** è stata messa in coda",
-                                      color=colore)))
-        list_queue[guild].append("**Playlist** - " + ptitle)
-        url_list[guild].append(None)
-        list_titles[guild].append("**Playlist** - " + ptitle)
     if voice.is_playing() or voice.is_paused():
         return 
     voice.play(discord.FFmpegPCMAudio(info['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: playlist(ctx))
     voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
-    playlistIndex[ctx.guild][0] += 1
+    list_queue[ctx.guild][0]['index'] += 1
     if len(nowPlaying[guild]) == 0:
         nowPlaying[guild].append(ytlink + info['id'])
     else:
@@ -250,32 +195,65 @@ def playlist(ctx, newURL=None):
                                                       info['title'] + "**\n" +
                                                       "Il brano fa parte della playlist **" + ptitle + "**\n"
                                                       "Attendere qualche istante...", color=colore)))
-    
-
-def svuota_coda(guild):
-    list_titles[guild].clear()
-    list_queue[guild].clear()
-    url_list[guild].clear()
-    playlistIndex[guild].clear()
-    playlistURL[guild].clear()
 
 
+# ---QUEUE FUNCTIONS--- #
+
+def queue(ctx):
+    # This is where our queue gets underway
+    guild = ctx.guild
+    voice = discord.utils.get(bot.voice_clients, guild=guild)
+    if len(list_queue[guild]) != 0:
+        info = list_queue[guild][0]
+        if list_queue[guild][0]['title'].startswith("**Playlist"):
+            playlist(ctx)
+            return
+        voice.play(discord.FFmpegPCMAudio(info['formats'][0]['url'], **FFMPEG_OPTS),
+                   after=lambda e: queue(ctx))
+        voice.source = discord.PCMVolumeTransformer(
+            voice.source, volume=global_volume[guild][0])
+        nowPlaying[guild][0] = ytlink + info['id']
+        channel = bot.get_channel(ctx.channel_id)
+        bot.loop.create_task(channel.send(embed=discord.Embed(title="Ora in Riproduzione",
+                                          description="Stiamo elaborando il brano **" +
+                                                              info['title'] +
+                                                              "**\n"
+                                          "Attendere qualche istante...", color=colore)))
+        del list_queue[guild][0]
+
+def playlistSetter(ctx, titolo):
+    guild = ctx.guild
+    voice = discord.utils.get(bot.voice_clients, guild=guild)
+    with youtube_dl.YoutubeDL(ydl_opts_p) as ydln:
+        try:
+            info = ydln.extract_info(titolo, download=False)
+        except youtube_dl.utils.DownloadError:
+            bot.loop.create_task(ctx.send(embed=discord.Embed(title="Errore nel reperimento del brano",
+                                               description="Non siamo riusciti a reperire il brano richiesto \n"
+                                                           "Prova a formulare la tua richiesta nella forma: \n"
+                                                           "'Artista - Titolo Brano'\n",
+                                               color=colore)))
+            return
+    ptitle = info['title']
+    list_queue[guild].append({'title':"**Playlist** - " + ptitle, 'index':1, 'url': titolo})
+    bot.loop.create_task(ctx.send(embed=discord.Embed(title="Playlist messa in coda",
+                                      description="La playlist **" + ptitle +
+                                                  "** è stata messa in coda",
+                                      color=colore)))
+    if not(voice.is_playing() or voice.is_paused()):
+        playlist(ctx)
 
 def guildStarter(guild):
     if list_queue.get(guild) is None:
         list_queue[guild] = list()
-        list_titles[guild] = list()
-        url_list[guild] = list()
         nowPlaying[guild] = list()
         global_volume[guild] = [0.25]
-        playlistIndex[guild] = list()
-        playlistURL[guild] = list()
 
 
 @bot.slash_command(name="clear", description="Rimuove tutti i brani nella coda")
 async def clear(ctx):
     if await permessi(ctx):
-        svuota_coda(ctx.guild)
+        list_queue[ctx.guild].clear()
         await ctx.respond(embed=discord.Embed(title="Coda Svuotata",
                                               description="Nella coda ora non è presente nessun brano",
                                               color=colore))
@@ -291,9 +269,9 @@ async def coda(ctx):
                                                   description="Nella coda non è presente nessun brano",
                                                   color=colore))
         else:
-            for elemento in list_titles[ctx.guild]:
+            for elemento in list_queue[ctx.guild]:
                 contatore += 1
-                stringa += str(contatore) + "- " + elemento + "\n"
+                stringa += str(contatore) + "- " + elemento['title'] + "\n"
             await ctx.respond(embed=discord.Embed(title="Coda",
                                                   description=stringa,
                                                   color=colore))
@@ -319,12 +297,10 @@ async def remove(ctx: discord.ApplicationContext,
         if indice < len(list_queue[ctx.guild]):
             await ctx.respond(embed=discord.Embed(title="Brano Skippato",
                                                   description="Il brano **" +
-                                                  list_titles[ctx.guild][indice] + "** "
+                                                  list_queue[ctx.guild][indice]['title'] + "** "
                                                   "è stato eliminato dalla coda",
                                                   color=colore))
             del list_queue[ctx.guild][indice]
-            del list_titles[ctx.guild][indice]
-            del url_list[ctx.guild][indice]
         else:
             await ctx.respond(embed=discord.Embed(title="Indice inesistente",
                                                   description="Non esiste nessun brano con tale indice nella coda",
@@ -378,7 +354,7 @@ async def skip(ctx):
 @bot.slash_command(name="disconnect", description="Disconnette il bot musicale dalla chat vocale")
 async def disconnect(ctx):
     if await permessi(ctx):
-        svuota_coda(ctx.guild)
+        list_queue[ctx.guild].clear()
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if voice.is_connected():
             await voice.disconnect()
@@ -428,7 +404,7 @@ async def resume(ctx):
 @bot.slash_command(name="stop", description="Interrompe la riproduzione e elimina la coda")
 async def stop(ctx):
     if await permessi(ctx):
-        svuota_coda(ctx.guild)
+        list_queue[ctx.guild].clear()
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if voice.is_playing():
             await ctx.respond(embed=discord.Embed(title="Stop",
