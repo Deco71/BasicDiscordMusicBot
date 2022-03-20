@@ -1,0 +1,42 @@
+UNF:Utente non trovato
+UNF2:Prima unisciti ad un canale vocale, dopo fai entrare il bot
+ELB:Elaborazione brano
+ELP:Elaborazione playlist
+ERB:Errore nel reperimento del brano
+ERB2:Non siamo riusciti a reperire il brano richiesto! Prova a formulare la tua richiesta nella forma "Artista - Titolo Brano"
+QUB:Brano messo in coda
+QUB2:Il brano **
+QUB3:** è stato messo in coda
+QUP:Playlist messa in coda
+QUP2:La playlist **
+QUP3:** è stata messa in coda
+NOW:Ora in Riproduzione
+PPL:Il brano fa parte della playlist **
+BRT:Brani Terminati
+BRT2:I brani nella coda sono finiti
+COD:Coda Svuotata
+COD2:La coda è stata svuotata
+CDE:Coda Vuota
+CDE2:Nella coda non ci sono brani
+CODA:Coda
+SIL:Silenzio...
+SIL2:Il silenzio regna su di noi
+REM:Brano Eliminato
+REM2:Il brano **
+REM3:è stato eliminato dalla coda
+IND:Indice inesistente
+IND2:Non esiste nessun brano con tale indice nella coda
+ERR:Errore
+ERR2:Per favore inserire un valore da 0 a 100
+ERR3:Non c'è nulla in riproduzione al momento
+ERR4:Il brano non è in pausa
+ERR5:Per usare il bot, connettiti prima ad un canale vocale
+ERR6:Per usare questo comando, devi prima iniziare la riproduzione con il comando /play
+VOL:Volume modificato
+VOL2:Il nuovo volume è impostato a 
+SKP:Brano Saltato
+PAU:Riproduzione messa in pausa
+RIP:Riproduzione ripresa
+STP:Riproduzione interrotta
+LAN:Lingua impostata
+LAN2:La tua lingua è stata impostata

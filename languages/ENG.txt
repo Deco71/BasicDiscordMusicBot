@@ -1,0 +1,42 @@
+UNF:User not found
+UNF2:First join a voice channel, then let the bot in
+ELB:Processing the track
+ELP:Processing the playlist
+ERB:Error in processing the track
+ERB2:We could not process the requested track. Try to formulate your request in the form "Artist - Song Title".
+QUB:Track Queued
+QUB2:The track **
+QUB3:** has been put in the queue
+QUP:Playlist Queued
+QUP2:The playlist **
+QUP3:** has been put in the queue
+NOW:Now Playing
+PPL:The song is part of the playlist called **
+BRT:Queue Ended
+BRT2:The tracks in the queue are finished
+COD:Tail Emptied
+COD2:The queue has been emptied
+CDE:Empty Queue
+CDE2:There are no tracks in the queue
+CODA:Queue
+SIL:Silence...
+SIL2:The silence is upon us
+REM:Track Eliminated
+REM2:The track **
+REM3:has been eliminated from the queue
+IND:Index Error
+IND2:There is no song with such an index in the queue
+ERR:Error
+ERR2:Please enter a value from 0 to 100
+ERR3:There is nothing playing at the moment
+ERR4:The track is not paused
+ERR5:To use the bot, first connect to a voice channel
+ERR6:To use this command, you must first start playback with the /play command
+VOL:Volume Changed
+VOL2:The volume is now set a 
+SKP:Track Skipped
+PAU:Track Paused
+RIP:Track Resumed
+STP:Music Stopped
+LAN:Language Set
+LAN2:Your new language is set
