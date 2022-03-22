@@ -1,6 +1,7 @@
 from random import choices
 from discord.ext import commands
 from discord.commands import OptionChoice
+from youtube_search import YoutubeSearch
 import youtube_dl.utils
 import youtube_dl
 import discord
@@ -42,6 +43,7 @@ FFMPEG_OPTS = {
 
 list_queue = dict()
 nowPlaying = dict()
+searched = dict()
 global_volume = dict()
 youtube_dl.utils.std_headers['Cookie'] = ''
 
@@ -79,6 +81,7 @@ def langDictBuilder():
 @bot.slash_command(name="play", description="Reproduces music from youtube or provided URL")
 async def play(ctx: discord.ApplicationContext,
                title: Option(str, "Insert an URL or a youtube video name", required=True)):
+    print(searched)
     # We first search for the user that wrote the message
     user = ctx.author
     guild = ctx.guild
@@ -98,13 +101,36 @@ async def play(ctx: discord.ApplicationContext,
     if voice is None:
         await voice_channel.connect()
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    # Then we search the video on yt
-    if title.__contains__("list="):
-        await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELP"), color=colore))
-        await playlistSetter(ctx, title)
-    else:
-        await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
-        await reproduce(ctx, voice, guild, title)
+    try:
+        if(searched[ctx.guild] is not None):
+            number = int(title)
+            await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
+            await reproduce(ctx, voice, guild, searched[guild][number-1])
+            searched[ctx.guild] = list()
+            return 
+    except:
+        # Then we search the video on yt
+        if title.__contains__("list="):
+            await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELP"), color=colore))
+            await playlistSetter(ctx, title)
+        else:
+            await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
+            await reproduce(ctx, voice, guild, title)
+    searched[ctx.guild] = list()
+
+@bot.slash_command(name="search", description="Searched music from youtube")
+async def search(ctx: discord.ApplicationContext,
+               title: Option(str, "Insert a youtube video name", required=True),
+               results: Option(int, "", min_value=1, max_value=10, default=5)):
+    guildStarter(ctx, ctx.guild)
+    # We first search the title on youtube and the add the results to the searched list
+    message = embed=discord.Embed(title=get_String(ctx, "SRC"),description=get_String(ctx, "MSG"),color=colore)
+    list = YoutubeSearch(title, max_results=results).to_dict()
+    # Then we send the results to the user
+    for i in range(0, results):
+        message.add_field(name=str(i+1), value=list[i]["title"], inline=False)
+        searched[ctx.guild].append("https://www.youtube.com" + list[i]['url_suffix'])
+    await ctx.respond(embed=message)
 
 
 # ---------------------------------------------- #
@@ -262,21 +288,25 @@ def guildStarter(ctx, guild):
     if list_queue.get(guild) is None:
         list_queue[guild] = list()
         nowPlaying[guild] = list()
+        searched[guild] = list()
         global_volume[guild] = [0.25]
         languageSet[guild] = "ENG"
         bot.loop.create_task(ctx.send(embed=discord.Embed(
                                     title="New Guild Setted",
-                                    description="**Thanks for using Ver 1.0 of DiscoMusic, an open source music bot**\n"
-                                    "New in this version:\n - Added the ability to change the language\n"
-                                    "If you want to change the bot language, use /language!\n"
-                                    "Wanna help add new languages? Visit our github repository!\n"
-                                    "https://github.com/Deco71/BasicDiscordMusicBot\n\n"
+                                    description="**Thanks for using Ver 1.1 of DiscoMusic, an open source music bot**\n"
+                                    "New in this version:\n - **Added the /search command!**\n"
+                                    "The bot isn't playing the music that makes you vibe?\n"
+                                    "Now you can use the /search command to search for a list of songs and then"
+                                    " add your preferite to the queue!\n\n"
                                     "**KNOWN BUGS**\n"
                                     "-)Sometimes a track in the queue will not load and the bot will skip that song.\n"
                                     "This is due to youtube responding with a HTTP 403 error.\n"
-                                    "If this happens, just reload the track\n\n"
+                                    "If this happens, just reload the track, nothing I can do at the moment :/\n\n"
+                                    "Wanna help code the bot? Wanna help add new languages?\n" 
+                                    "Visit our github repository!\n"
+                                    "https://github.com/Deco71/BasicDiscordMusicBot\n\n"
                                     "You will see this message everytime a new version is released, "
-                                    "For every info or bugs, contact the developer at discomusic@popipopi.win",
+                                    "for every info or bugs, contact the developer at discomusic@popipopi.win",
                                     color=colore)))
 
 

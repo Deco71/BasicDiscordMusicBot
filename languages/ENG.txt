@@ -40,3 +40,5 @@ RIP:Track Resumed
 STP:Music Stopped
 LAN:Language Set
 LAN2:Your new language is set
+SRC:Search Results
+MSG:To play one of these tracks run the command /play and specify the index of the track
