@@ -44,6 +44,7 @@ FFMPEG_OPTS = {
 list_queue = dict()
 nowPlaying = dict()
 searched = dict()
+stopped = dict()
 global_volume = dict()
 youtube_dl.utils.std_headers['Cookie'] = ''
 
@@ -104,18 +105,18 @@ async def play(ctx: discord.ApplicationContext,
     try:
         if(searched[ctx.guild] is not None):
             number = int(title)
-            await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
-            await reproduce(ctx, voice, guild, searched[guild][number-1])
+            message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
+            await reproduce(ctx, voice, guild, searched[guild][number-1], message)
             searched[ctx.guild] = list()
             return 
     except:
         # Then we search the video on yt
         if title.__contains__("list="):
-            await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELP"), color=colore))
-            await playlistSetter(ctx, title)
+            message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELP"), color=colore))
+            await playlistSetter(ctx, title, message)
         else:
-            await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
-            await reproduce(ctx, voice, guild, title)
+            message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
+            await reproduce(ctx, voice, guild, title, message)
     searched[ctx.guild] = list()
 
 @bot.slash_command(name="search", description="Searched music from youtube")
@@ -124,12 +125,14 @@ async def search(ctx: discord.ApplicationContext,
                results: Option(int, "", min_value=1, max_value=10, default=5)):
     guildStarter(ctx, ctx.guild)
     # We first search the title on youtube and the add the results to the searched list
-    message = embed=discord.Embed(title=get_String(ctx, "SRC"),description=get_String(ctx, "MSG"),color=colore)
     list = YoutubeSearch(title, max_results=results).to_dict()
     # Then we send the results to the user
+    messageDescription = ""
     for i in range(0, results):
-        message.add_field(name=str(i+1), value=list[i]["title"], inline=False)
+        messageDescription += "**" + str(i+1) + ")** - " + list[i]["title"] + "\n"
         searched[ctx.guild].append("https://www.youtube.com" + list[i]['url_suffix'])
+    message = embed=discord.Embed(title=get_String(ctx, "SRC"),description=get_String(ctx, "MSG") + "\n" 
+    + messageDescription,color=colore)
     await ctx.respond(embed=message)
 
 
@@ -138,7 +141,7 @@ async def search(ctx: discord.ApplicationContext,
 # ---------------------------------------------- #
 
 
-async def reproduce(ctx, voice, guild, titolo):
+async def reproduce(ctx, voice, guild, titolo, message):
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(titolo, download=False)
@@ -146,28 +149,28 @@ async def reproduce(ctx, voice, guild, titolo):
             try:
                 info = ydl.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
             except youtube_dl.utils.DownloadError:
-                await ctx.send(embed=discord.Embed(title=get_String(ctx, "ERB"),
+                await ctx.edit_original_message(embed=discord.Embed(title=get_String(ctx, "ERB"),
                                                    description=get_String(ctx, "ERB2"),
                                                    color=colore))
                 return
             except IndexError:
-                await ctx.send(embed=discord.Embed(title=get_String(ctx, "ERB"),
+                await ctx.edit_original_message(embed=discord.Embed(title=get_String(ctx, "ERB"),
                                                    description=get_String(ctx, "ERB2"),
                                                    color=colore))
                 return
     # If something is on right now, we append the new song to the queue
     if voice.is_playing() or voice.is_paused():
-        await ctx.send(embed=discord.Embed(title=get_String(ctx, "QUB"),
+        await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "QUB"),
                                             description=get_String(ctx, "QUB2") + info['title'] +
                                             get_String(ctx, "QUB3"),
                                             color=colore))
     list_queue[guild].append(info)
     # If the bot is not playing, we start playing the song
     if not(voice.is_playing() or voice.is_paused()):
-        queue(ctx)
+        queue(ctx, message)
 
 
-def queue(ctx):
+def queue(ctx, message=None):
     # This is where our queue gets underway
     guild = ctx.guild
     voice = discord.utils.get(bot.voice_clients, guild=guild)
@@ -189,7 +192,12 @@ def queue(ctx):
             voice.source, volume=global_volume[guild][0])
     nowPlayingSetter(ctx.guild, info)
     channel = bot.get_channel(ctx.channel_id)
-    bot.loop.create_task(channel.send(embed=discord.Embed(title=get_String(ctx, "NOW"),
+    if message is not None:
+        bot.loop.create_task(message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "NOW"),
+                                          description="**" + info['title'] + "**\n",
+                                          color=colore)))
+    else:
+        bot.loop.create_task(channel.send(embed=discord.Embed(title=get_String(ctx, "NOW"),
                                           description="**" + info['title'] + "**\n",
                                           color=colore)))
     del list_queue[guild][0]
@@ -200,7 +208,7 @@ def queue(ctx):
 # ------- PLAYLIST ELABORATION SECTION --------- #
 # ---------------------------------------------- #
 
-async def playlistSetter(ctx, titolo):
+async def playlistSetter(ctx, titolo, message):
     guild = ctx.guild
     voice = discord.utils.get(bot.voice_clients, guild=guild)
     list_queue[guild].append({'title':"**Playlist** - ", 'index':1, 'url': titolo})
@@ -210,15 +218,15 @@ async def playlistSetter(ctx, titolo):
     ptitle = info['title']
     list_queue[guild][len(list_queue[guild])-1] = {'title':"**Playlist** - " + ptitle, 'index':1, 'url': titolo}
     if voice.is_playing() or voice.is_paused():
-        await ctx.send(embed=discord.Embed(title=get_String(ctx, "QUP"),
+        await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "QUP"),
                                            description=get_String(ctx, "QUP2") + ptitle +
                                                        get_String(ctx, "QUP3"),
                                            color=colore))
     if not(voice.is_playing() or voice.is_paused()):
-        playlist(ctx)
+        playlist(ctx, message)
 
 
-def playlist(ctx):
+def playlist(ctx, message=None):
     guild = ctx.guild
     voice = discord.utils.get(bot.voice_clients, guild=guild)
     if len(list_queue[guild]) != 0 and not list_queue[guild][0]['title'].startswith("**Playlist"):
@@ -250,7 +258,13 @@ def playlist(ctx):
     list_queue[ctx.guild][0]['index'] += 1
     nowPlayingSetter(ctx.guild, info)
     channel = bot.get_channel(ctx.channel_id)
-    bot.loop.create_task(channel.send(embed=discord.Embed(title=get_String(ctx, "NOW"),
+    if message is not None:
+        bot.loop.create_task(message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "NOW"),
+                                        description="**" + info['title'] + "**\n" +
+                                                    get_String(ctx, "PPL") + ptitle + "**\n",
+                                        color=colore)))
+    else:
+        bot.loop.create_task(channel.send(embed=discord.Embed(title=get_String(ctx, "NOW"),
                                         description="**" + info['title'] + "**\n" +
                                                     get_String(ctx, "PPL") + ptitle + "**\n",
                                         color=colore)))
@@ -289,6 +303,7 @@ def guildStarter(ctx, guild):
         list_queue[guild] = list()
         nowPlaying[guild] = list()
         searched[guild] = list()
+        stopped[guild] = False
         global_volume[guild] = [0.25]
         languageSet[guild] = "ENG"
         bot.loop.create_task(ctx.send(embed=discord.Embed(
@@ -318,14 +333,16 @@ def nowPlayingSetter(guild, i):
 
 
 def endQueue(ctx):
-    bot.loop.create_task(ctx.send(embed=discord.Embed(title=get_String(ctx, "BRT"),
+    if(stopped[ctx.guild] == False):
+        bot.loop.create_task(ctx.send(embed=discord.Embed(title=get_String(ctx, "BRT"),
                                                description=get_String(ctx, "BRT2"),
                                                color=colore)))
-    try:
-        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        bot.loop.create_task(voice.disconnect())
-    except:
-        pass
+        try:
+            voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+            bot.loop.create_task(voice.disconnect())
+        except:
+            pass
+    stopped[ctx.guild] = False
 
 
 @bot.slash_command(name="clear", description="Removes all songs from the queue")
@@ -419,9 +436,10 @@ async def skip(ctx: discord.ApplicationContext):
     if permessi(ctx):
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if voice.is_connected() and voice.is_playing():
-            await ctx.respond(embed=discord.Embed(title=get_String(ctx, "SKP"),
-                                                  color=colore))
+            message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "SKP"),
+                                                  color=colore), delete_after=1)
             voice.stop()
+            #await message.delete_original_message()
         else:
             await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ERR"),
                                                   description=get_String(ctx, "ERR3"),
@@ -463,10 +481,11 @@ async def resume(ctx:  discord.ApplicationContext):
 @bot.slash_command(name="stop", description="Disconnects the bot and clears the reproduction queue")
 async def stop(ctx: discord.ApplicationContext):
     if permessi(ctx):
-        list_queue[ctx.guild].clear()
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        if voice.is_playing():
-            voice.stop()
+        if voice.is_playing() or voice.is_paused():
+            list_queue[ctx.guild].clear()
+            stopped[ctx.guild] = True
+            await voice.disconnect()
             await ctx.respond(embed=discord.Embed(title=get_String(ctx, "STP"),
                                                   color=colore))
         else:
