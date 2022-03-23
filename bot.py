@@ -1,4 +1,5 @@
 from random import choices
+import random
 from discord.ext import commands
 from discord.commands import OptionChoice
 from youtube_search import YoutubeSearch
@@ -402,16 +403,17 @@ async def remove(ctx: discord.ApplicationContext,
                                                   color=colore))
 
 @bot.slash_command(name="shuffle", description="Shuffles the queue")
-async def skip(ctx: discord.ApplicationContext):
+async def shuffle(ctx: discord.ApplicationContext):
     if permessi(ctx):
-        if voice.is_connected() and voice.is_playing():
-            message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "SKP"),
-                                                  color=colore), delete_after=1)
-            voice.stop()
+        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        if voice.is_connected():
+            await ctx.respond(embed=discord.Embed(title=get_String(ctx, "SHF"),
+                                                  color=colore))
+            random.shuffle(list_queue[ctx.guild])
         else:
             await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ERR"),
-                                                  description=get_String(ctx, "ERR3"),
-                                                  color=colore)
+                                              description=get_String(ctx, "ERR6"),
+                                              color=colore))
 
 
 
