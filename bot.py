@@ -401,6 +401,18 @@ async def remove(ctx: discord.ApplicationContext,
                                                   description=get_String(ctx, "IND2"),
                                                   color=colore))
 
+@bot.slash_command(name="shuffle", description="Shuffles the queue")
+async def skip(ctx: discord.ApplicationContext):
+    if permessi(ctx):
+        if voice.is_connected() and voice.is_playing():
+            message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "SKP"),
+                                                  color=colore), delete_after=1)
+            voice.stop()
+        else:
+            await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ERR"),
+                                                  description=get_String(ctx, "ERR3"),
+                                                  color=colore)
+
 
 
 # ---------------------------------------------- #
@@ -439,7 +451,6 @@ async def skip(ctx: discord.ApplicationContext):
             message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "SKP"),
                                                   color=colore), delete_after=1)
             voice.stop()
-            #await message.delete_original_message()
         else:
             await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ERR"),
                                                   description=get_String(ctx, "ERR3"),
