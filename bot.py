@@ -75,6 +75,16 @@ def langDictBuilder():
     print("Dictionary loaded")
 
 
+def welcomeBuilder():
+    with open("files/welcome.txt", encoding="UTF-8", mode='r') as f:
+        welcome = ""
+        for line in f:
+            welcome += line
+    return welcome
+
+welcome = welcomeBuilder()
+
+
 
 # ---------------------------------------------- #
 # ----------- SUBMIT SONGS SECTION ------------- #
@@ -309,20 +319,7 @@ def guildStarter(ctx, guild):
         languageSet[guild] = "ENG"
         bot.loop.create_task(ctx.send(embed=discord.Embed(
                                     title="New Guild Setted",
-                                    description="**Thanks for using Ver 1.1 of DiscoMusic, an open source music bot**\n"
-                                    "New in this version:\n - **Added the /search command!**\n"
-                                    "The bot isn't playing the music that makes you vibe?\n"
-                                    "Now you can use the /search command to search for a list of songs and then"
-                                    " add your preferite to the queue!\n\n"
-                                    "**KNOWN BUGS**\n"
-                                    "-)Sometimes a track in the queue will not load and the bot will skip that song.\n"
-                                    "This is due to youtube responding with a HTTP 403 error.\n"
-                                    "If this happens, just reload the track, nothing I can do at the moment :/\n\n"
-                                    "Wanna help code the bot? Wanna help add new languages?\n" 
-                                    "Visit our github repository!\n"
-                                    "https://github.com/Deco71/BasicDiscordMusicBot\n\n"
-                                    "You will see this message everytime a new version is released, "
-                                    "for every info or bugs, contact the developer at discomusic@popipopi.win",
+                                    description=welcome,
                                     color=colore)))
 
 
@@ -542,6 +539,7 @@ def permessi(ctx):
 @bot.event
 async def on_ready():
     langDictBuilder()
+    welcomeBuilder()
     print('Bot server started as nickname {0.user}'.format(bot))
 
 bot.run(TOKEN)

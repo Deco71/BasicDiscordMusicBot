@@ -1,0 +1,23 @@
+**Thanks for using Ver 1.2 of DiscoMusic, an open source music bot**
+
+New in this version:
+**-) Added the /search command!**
+The bot isn't playing the music that makes you vibe?
+Now you can use the /search command to search for a list of songs and then
+add your preferite to the queue!
+
+**-) Added the /shuffle command!**
+
+**-) Bug Fixes and enanchements**
+
+**KNOWN BUGS**
+**-)** Sometimes a track in the queue will not load and the bot will skip that song.
+This is due to youtube responding with a HTTP 403 error.
+If this happens, just reload the track, nothing I can do at the moment :/
+
+Wanna help code the bot? Wanna help add new languages?
+Visit our github repository!
+https://github.com/Deco71/BasicDiscordMusicBot\n\n
+
+You will see this message everytime a new version is released,
+for every info or bugs, contact the developer at discomusic@popipopi.win
