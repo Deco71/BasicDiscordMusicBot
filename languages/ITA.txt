@@ -42,3 +42,4 @@ LAN:Lingua impostata
 LAN2:La tua lingua è stata impostata
 SRC:Risultati Ricerca
 MSG:Per riprodurre uno di questi brani esegui il comando /play e specifica l'indice del brano
+SHF:Ho mischiato la coda!
