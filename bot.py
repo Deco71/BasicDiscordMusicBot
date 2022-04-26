@@ -31,6 +31,9 @@ ydl_opts = {
     'format': 'bestaudio/best',
     'geo_bypass': 'True',
     'noplaylist': 'True',
+    'source_address': '0.0.0.0',  # ipv6 addresses cause issues sometimes
+    'force-ipv4': True,
+    'cachedir': False,
     'skip_download': True,
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
@@ -299,6 +302,9 @@ def playlistFind(ctx, index, url):
     'format': 'bestaudio/best',
     'geo_bypass': 'True',
     'skip_download': True,
+    'source_address': '0.0.0.0',  # ipv6 addresses cause issues sometimes
+    'force-ipv4': True,
+    'cachedir': False,
     'playlist_items': str(index),
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
