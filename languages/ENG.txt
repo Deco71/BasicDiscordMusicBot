@@ -3,7 +3,7 @@ UNF2:First join a voice channel, then let the bot in
 ELB:Processing the track
 ELP:Processing the playlist
 ERB:Error in processing the track
-ERB2:We could not process the requested track. Try to formulate your request in the form "Artist - Song Title".
+ERB2:We could not process the requested track, probably the video is age restricted. If not, try to formulate your request in the form "Artist - Song Title".
 QUB:Track Queued
 QUB2:The track **
 QUB3:** has been put in the queue

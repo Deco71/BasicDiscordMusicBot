@@ -93,7 +93,6 @@ welcome = welcomeBuilder()
 @bot.slash_command(name="play", description="Reproduces music from youtube or provided URL")
 async def play(ctx: discord.ApplicationContext,
                title: Option(str, "Insert an URL or a youtube video name", required=True)):
-    print(searched)
     # We first search for the user that wrote the message
     user = ctx.author
     guild = ctx.guild
@@ -113,36 +112,46 @@ async def play(ctx: discord.ApplicationContext,
     if voice is None:
         await voice_channel.connect()
         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    is_number = False
+    number = 0
     try:
-        if(searched[ctx.guild] is not None):
-            number = int(title)
-            message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
+        number = int(title)
+        is_number = True
+    except ValueError:
+        is_number = False
+    if(searched[ctx.guild] is not None and len(searched[ctx.guild]) > 0 and is_number):
+        message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
+        try:
             await reproduce(ctx, voice, guild, searched[guild][number-1], message)
-            searched[ctx.guild] = list()
-            return 
-    except:
-        # Then we search the video on yt
-        if title.__contains__("list="):
-            message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELP"), color=colore))
-            await playlistSetter(ctx, title, message)
-        else:
-            message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
-            await reproduce(ctx, voice, guild, title, message)
-    searched[ctx.guild] = list()
+        except IndexError:
+            await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "IND"),
+                                                   description=get_String(ctx, "IND2"),
+                                                   color=colore))
+            return
+        searched[ctx.guild] = list()
+        return 
+    # Then we search the video on yt
+    if title.__contains__("list="):
+        message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELP"), color=colore))
+        await playlistSetter(ctx, title, message)
+    else:
+        message = await ctx.respond(embed=discord.Embed(title=get_String(ctx, "ELB"), color=colore))
+        await reproduce(ctx, voice, guild, title, message)
 
 @bot.slash_command(name="search", description="Searched music from youtube")
 async def search(ctx: discord.ApplicationContext,
                title: Option(str, "Insert a youtube video name", required=True),
                results: Option(int, "", min_value=1, max_value=10, default=5)):
     guildStarter(ctx, ctx.guild)
+    searched[ctx.guild] = list()
     # We first search the title on youtube and the add the results to the searched list
-    list = YoutubeSearch(title, max_results=results).to_dict()
+    lista = YoutubeSearch(title, max_results=results).to_dict()
     # Then we send the results to the user
     messageDescription = ""
     for i in range(0, results):
-        messageDescription += "**" + str(i+1) + ")** - " + list[i]["title"] + "\n"
-        searched[ctx.guild].append("https://www.youtube.com" + list[i]['url_suffix'])
-    message = embed=discord.Embed(title=get_String(ctx, "SRC"),description=get_String(ctx, "MSG") + "\n" 
+        messageDescription += "**" + str(i+1) + ")** - " + lista[i]["title"] + "\n"
+        searched[ctx.guild].append("https://www.youtube.com" + lista[i]['url_suffix'])
+    message = discord.Embed(title=get_String(ctx, "SRC"),description=get_String(ctx, "MSG") + "\n" 
     + messageDescription,color=colore)
     await ctx.respond(embed=message)
 
@@ -160,14 +169,18 @@ async def reproduce(ctx, voice, guild, titolo, message):
             try:
                 info = ydl.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
             except youtube_dl.utils.DownloadError:
-                await ctx.edit_original_message(embed=discord.Embed(title=get_String(ctx, "ERB"),
+                await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "ERB"),
                                                    description=get_String(ctx, "ERB2"),
                                                    color=colore))
+                if not voice.is_playing():
+                    await voice.disconnect()
                 return
             except IndexError:
-                await ctx.edit_original_message(embed=discord.Embed(title=get_String(ctx, "ERB"),
+                await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "ERB"),
                                                    description=get_String(ctx, "ERB2"),
                                                    color=colore))
+                if not voice.is_playing():
+                    await voice.disconnect()
                 return
     # If something is on right now, we append the new song to the queue
     if voice.is_playing() or voice.is_paused():

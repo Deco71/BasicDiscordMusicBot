@@ -3,7 +3,7 @@ UNF2:Prima unisciti ad un canale vocale, dopo fai entrare il bot
 ELB:Elaborazione brano
 ELP:Elaborazione playlist
 ERB:Errore nel reperimento del brano
-ERB2:Non siamo riusciti a reperire il brano richiesto! Prova a formulare la tua richiesta nella forma "Artista - Titolo Brano"
+ERB2:Non siamo riusciti a reperire il brano richiesto, probabilmente il video è "age restricted". Se non lo è, prova a formulare la tua richiesta nella forma "Artista - Titolo Brano"
 QUB:Brano messo in coda
 QUB2:Il brano **
 QUB3:** è stato messo in coda
