@@ -1,4 +1,4 @@
-**Thanks for using Ver 1.2.1 of DiscoMusic, an open source music bot**
+**Thanks for using Ver 1.2.2 of DiscoMusic, an open source music bot**
 
 New in this version:
 **-) Solved some bugs with the shuffle command**
