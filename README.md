@@ -9,6 +9,8 @@ and FFMpeg.
 
 It supports audio sources from youtube and soundcloud.
 
+[The bot is available here!](https://discord.com/api/oauth2/authorize?client_id=933811329117065307&permissions=8&scope=bot%20applications.commands)
+
 # Installing the Bot
 If you want to host the bot for yourselves, firstly use the command 
 >pip3 install -r requirements.txt
