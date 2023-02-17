@@ -3,8 +3,8 @@ import random
 from discord.ext import commands
 from discord.commands import OptionChoice
 from youtube_search import YoutubeSearch
-import youtube_dl.utils
-import youtube_dl
+import yt_dlp.utils
+import yt_dlp as youtube_dl
 import discord
 import os
 from discord import Option
@@ -28,7 +28,7 @@ COMMAND_PREFIX = "/"
 colore = 0x6897e0
 ytlink = "https://www.youtube.com/watch?v="
 ydl_opts = {
-    'format': 'bestaudio/best',
+    'format': 'bestaudio',
     'geo_bypass': 'True',
     'noplaylist': 'True',
     'source_address': '0.0.0.0',  # ipv6 addresses cause issues sometimes
@@ -213,7 +213,7 @@ def queue(ctx, message=None):
         endQueue(ctx)
         return
     #If not, we finally start to play the song
-    voice.play(discord.FFmpegPCMAudio(info['formats'][0]['url'], **FFMPEG_OPTS),
+    voice.play(discord.FFmpegPCMAudio(info['url'], **FFMPEG_OPTS),
                    after=lambda e: queue(ctx))
     voice.source = discord.PCMVolumeTransformer(
             voice.source, volume=global_volume[guild][0])
@@ -280,7 +280,7 @@ def playlist(ctx, message=None):
         return
     if voice.is_playing() or voice.is_paused():
         return 
-    voice.play(discord.FFmpegPCMAudio(info['formats'][0]['url'], **FFMPEG_OPTS), after=lambda e: playlist(ctx))
+    voice.play(discord.FFmpegPCMAudio(info['url'], **FFMPEG_OPTS), after=lambda e: playlist(ctx))
     voice.source = discord.PCMVolumeTransformer(voice.source, volume=global_volume[guild][0])
     list_queue[ctx.guild][0]['index'] += 1
     nowPlayingSetter(ctx.guild, info)
