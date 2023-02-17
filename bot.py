@@ -336,10 +336,10 @@ def guildStarter(ctx, guild):
         stopped[guild] = False
         global_volume[guild] = [0.25]
         languageSet[guild] = "ENG"
-        #bot.loop.create_task(ctx.send(embed=discord.Embed(
-        #                            title="New Guild Setted",
-        #                            description=welcome,
-        #                            color=colore)))
+        bot.loop.create_task(ctx.send(embed=discord.Embed(
+                                    title="New Guild Setted",
+                                    description=welcome,
+                                    color=colore)))
 
 
 def nowPlayingSetter(guild, i):

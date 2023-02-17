@@ -1,8 +1,7 @@
-**Thanks for using Ver 1.2.2 of DiscoMusic, an open source music bot**
+**Thanks for using Ver 1.3 of DiscoMusic, an open source music bot**
 
 New in this version:
-**-) Solved some bugs with the shuffle command**
-**-) Changed bot hosting for better uptime and performance**
+**-) Switched from yt-dl to yt-dlp for faster and more reliable scraping experience**
 
 Do you have a problem? Wanna help code the bot?
 Visit our github repository!
