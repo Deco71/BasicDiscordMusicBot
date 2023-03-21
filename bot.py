@@ -127,7 +127,7 @@ async def play(ctx: discord.ApplicationContext,
         try:
             await reproduce(ctx, voice, guild, searched[guild][number-1], message)
         except IndexError:
-            await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "IND"),
+            await message.edit_original_response(embed=discord.Embed(title=get_String(ctx, "IND"),
                                                    description=get_String(ctx, "IND2"),
                                                    color=colore))
             return
@@ -172,14 +172,14 @@ async def reproduce(ctx, voice, guild, titolo, message):
             try:
                 info = ydl.extract_info(f"ytsearch:{titolo}", download=False)['entries'][0]
             except youtube_dl.utils.DownloadError:
-                await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "ERB"),
+                await message.edit_original_response(embed=discord.Embed(title=get_String(ctx, "ERB"),
                                                    description=get_String(ctx, "ERB2"),
                                                    color=colore))
                 if not voice.is_playing():
                     await voice.disconnect()
                 return
             except IndexError:
-                await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "ERB"),
+                await message.edit_original_response(embed=discord.Embed(title=get_String(ctx, "ERB"),
                                                    description=get_String(ctx, "ERB2"),
                                                    color=colore))
                 if not voice.is_playing():
@@ -187,7 +187,7 @@ async def reproduce(ctx, voice, guild, titolo, message):
                 return
     # If something is on right now, we append the new song to the queue
     if voice.is_playing() or voice.is_paused():
-        await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "QUB"),
+        await message.edit_original_response(embed=discord.Embed(title=get_String(ctx, "QUB"),
                                             description=get_String(ctx, "QUB2") + info['title'] +
                                             get_String(ctx, "QUB3"),
                                             color=colore))
@@ -220,7 +220,7 @@ def queue(ctx, message=None):
     nowPlayingSetter(ctx.guild, info)
     channel = bot.get_channel(ctx.channel_id)
     if message is not None:
-        bot.loop.create_task(message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "NOW"),
+        bot.loop.create_task(message.edit_original_response(embed=discord.Embed(title=get_String(ctx, "NOW"),
                                           description="**" + info['title'] + "**\n",
                                           color=colore)))
     else:
@@ -245,7 +245,7 @@ async def playlistSetter(ctx, titolo, message):
     ptitle = info['title']
     list_queue[guild][len(list_queue[guild])-1] = {'title':"**Playlist** - " + ptitle, 'index':1, 'url': titolo}
     if voice.is_playing() or voice.is_paused():
-        await message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "QUP"),
+        await message.edit_original_response(embed=discord.Embed(title=get_String(ctx, "QUP"),
                                            description=get_String(ctx, "QUP2") + ptitle +
                                                        get_String(ctx, "QUP3"),
                                            color=colore))
@@ -286,7 +286,7 @@ def playlist(ctx, message=None):
     nowPlayingSetter(ctx.guild, info)
     channel = bot.get_channel(ctx.channel_id)
     if message is not None:
-        bot.loop.create_task(message.edit_original_message(embed=discord.Embed(title=get_String(ctx, "NOW"),
+        bot.loop.create_task(message.edit_original_response(embed=discord.Embed(title=get_String(ctx, "NOW"),
                                         description="**" + info['title'] + "**\n" +
                                                     get_String(ctx, "PPL") + ptitle + "**\n",
                                         color=colore)))
