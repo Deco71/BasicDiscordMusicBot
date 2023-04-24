@@ -37,7 +37,6 @@ ydl_opts = {
     'skip_download': True,
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
         'preferredquality': '192',
     }],
 }
