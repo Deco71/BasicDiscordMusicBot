@@ -1,7 +1,9 @@
-**Thanks for using Ver 1.3 of DiscoMusic, an open source music bot**
+**Thanks for using Ver 2.0 of DiscoMusic, an open source music bot**
 
 New in this version:
-**-) Switched from yt-dl to yt-dlp for faster and more reliable scraping experience**
+**-) Added support to Spotify links! Now you can use spotify links to reproduce and queue songs**
+(Please be aware only works if the song is available on youtube)
+**-) Under the hoods enhancement to code bot**
 
 Do you have a problem? Wanna help code the bot?
 Visit our github repository!

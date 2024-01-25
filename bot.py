@@ -8,6 +8,7 @@ import yt_dlp as youtube_dl
 import discord
 import os
 from discord import Option
+from dotenv import load_dotenv
 
 
 
@@ -15,9 +16,20 @@ from discord import Option
 # ----------- BOT VARIABLES SECTION ------------ #
 # ---------------------------------------------- #
 
-f = open("tokenBot.txt", encoding='utf8')
-# You must save your token in a txt file called "tokenBot.txt" and put this file in the directory with your bot.py
-TOKEN = f.read().strip()
+if not load_dotenv():
+    print("No '.env' file found.\n Please modify the 'example.env' file accordingly, and rename it to '.env'\n Shutting down...")
+    os._exit(0)
+
+if not os.getenv('botApiToken'):
+    print("No 'botApiToken' found in '.env' file.\n Please check that the variable is correctly set.\n Shutting down...")
+    os._exit(0)
+TOKEN = os.getenv('botApiToken')
+
+if not os.getenv('spotifyApiToken'):
+    print("No 'spotifyApiToken' found in '.env' file.\n Please check that the variable is correctly set.\n The spotify integration will not work.")
+SPOTIFY_TOKEN = os.getenv('spotifyApiToken')
+
+
 languageSet = dict()
 AvailableLanguage = [
     OptionChoice(name="English", value="ENG"),
